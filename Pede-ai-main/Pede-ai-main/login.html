@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#ee4d2d">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Entrar | Pede Aí</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary-orange: #ee4d2d; --ai-green: #27ae60; --white: #ffffff; }
+
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+            background-color: var(--primary-orange);
+            overscroll-behavior: none;
+        }
+
+        .wrapper {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; min-height: 100dvh;
+            color: var(--white); text-align: center;
+            padding: calc(env(safe-area-inset-top, 0px) + 30px) 30px
+                     calc(env(safe-area-inset-bottom, 0px) + 30px) 30px;
+            box-sizing: border-box;
+        }
+
+        .logo-container { margin-bottom: 5px; }
+        .logo-text { font-size: 48px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .ai-badge { background-color: var(--ai-green); color: var(--white); padding: 2px 12px; border-radius: 50px; font-size: 32px; font-style: italic; }
+
+        .slogan { font-size: 16px; font-weight: 300; opacity: 0.9; margin-bottom: 40px; letter-spacing: 0.5px; }
+
+        .icon-row { display: flex; justify-content: center; gap: 40px; margin-bottom: 50px; }
+        .icon-item { font-size: 32px; opacity: 0.8; }
+
+        .form-container { width: 100%; max-width: 300px; }
+
+        input {
+            width: 100%; background: transparent; border: none;
+            border-bottom: 1px solid rgba(255,255,255,0.6);
+            padding: 12px 0; margin-bottom: 15px;
+            color: var(--white); font-size: 16px; text-align: center;
+            outline: none; transition: border-bottom-color 0.3s;
+            -webkit-appearance: none; appearance: none;
+            border-radius: 0;
+            font-family: inherit;
+        }
+        input::placeholder { color: rgba(255,255,255,0.7); }
+        input:focus { border-bottom-color: var(--white); }
+
+        .btn-main {
+            width: 100%; background-color: var(--white); color: var(--primary-orange);
+            border: none; padding: 15px; border-radius: 30px;
+            font-weight: bold; font-size: 16px; margin-top: 25px;
+            cursor: pointer; text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            font-family: inherit;
+            -webkit-appearance: none; appearance: none;
+            min-height: 50px;
+            transition: opacity 0.15s ease, transform 0.1s ease;
+        }
+        .btn-main:active { opacity: 0.85; transform: scale(0.98); }
+        .btn-main:disabled { background-color: rgba(255,255,255,0.5); cursor: not-allowed; transform: none; }
+
+        .link-cadastrar { margin-top: 25px; color: var(--white); text-decoration: none; font-size: 14px; display: inline-block; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 2px; }
+
+        .support-container {
+            position: fixed;
+            bottom: calc(env(safe-area-inset-bottom, 16px) + 14px);
+            left: 50%; transform: translateX(-50%);
+            display: flex; align-items: center; gap: 8px;
+            opacity: 0.75; font-size: 13px; cursor: pointer;
+            min-height: 44px; padding: 0 12px;
+            white-space: nowrap;
+        }
+        .support-container i { font-size: 16px; }
+
+        /* ── Toast iOS (substitui alert nativo) ── */
+        .toast-ios {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 16px);
+            left: 50%; transform: translateX(-50%) translateY(-20px);
+            background: rgba(30,30,30,0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 500;
+            font-family: inherit;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            max-width: 280px;
+            text-align: center;
+            line-height: 1.4;
+            white-space: pre-line;
+        }
+        .toast-ios.visivel {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    
+<button id="btnVoltar" aria-label="Voltar" style="
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 14px);
+    left: 16px;
+    z-index: 100;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.22);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+    transition: background 0.18s, transform 0.12s;
+" ontouchstart="this.style.background='rgba(255,255,255,0.38)'" 
+   ontouchend="this.style.background='rgba(255,255,255,0.22)'"
+   onclick="window.location.replace('index.html')">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+</button>   
+
+<!-- Toast iOS (substitui alert nativo) -->
+<div class="toast-ios" id="toastIOS"></div>
+
+<script>
+    window._toastTimer = null;
+    window.mostrarToast = function(msg, tipo) {
+        const el = document.getElementById('toastIOS');
+        if (!el) return;
+        const icones = { erro: '⚠️ ', sucesso: '✅ ', info: 'ℹ️ ' };
+        el.innerText = (icones[tipo] || '') + msg;
+        el.classList.add('visivel');
+        clearTimeout(window._toastTimer);
+        window._toastTimer = setTimeout(() => {
+            el.classList.remove('visivel');
+        }, 3200);
+    };
+</script>
+
+<div class="wrapper">
+    <div class="logo-container">
+        <div class="logo-text">Pede <span class="ai-badge">Ai</span></div>
+    </div>
+    <div class="slogan">Seu marketplace de vendas completo</div>
+
+    <div class="icon-row">
+        <i class="fas fa-box icon-item"></i>
+        <i class="fas fa-hamburger icon-item"></i>
+        <i class="fas fa-bullhorn icon-item"></i>
+    </div>
+
+    <div class="form-container" id="areaLogin">
+        <input
+            type="email"
+            id="emailL"
+            placeholder="E-mail"
+            autocomplete="email"
+            autocorrect="off"
+            autocapitalize="none"
+            spellcheck="false"
+            inputmode="email">
+
+        <div style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center;">
+            <input
+                type="password"
+                id="senhaL"
+                placeholder="Senha"
+                autocomplete="current-password"
+                autocorrect="off"
+                autocapitalize="none"
+                spellcheck="false"
+                style="padding: 12px 40px; margin-bottom: 15px;">
+            <i class="fas fa-eye" id="toggleLogin"
+               style="position: absolute; right: 5px; top: 12px; cursor: pointer; color: rgba(255,255,255,0.7); font-size: 18px; padding: 5px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: flex-end;"></i>
+        </div>
+
+        <button id="btnEntrar" class="btn-main">ENTRAR NO PAINEL</button>
+        <a href="cadastro.html" class="link-cadastrar">Cadastrar-se</a>
+        <br>
+        <button onclick="window.abrirRecuperacao()" style="background:none; border:none; color:rgba(255,255,255,0.75); font-size:13px; margin-top:12px; cursor:pointer; text-decoration:underline; text-underline-offset:3px; font-family:inherit; padding:10px 0; min-height:44px; display:inline-flex; align-items:center;">
+            Esqueci minha senha
+        </button>
+        <br><br>
+        <p style="font-size:12px;text-align:center;margin-top:20px;opacity:0.8;">
+            Ao continuar, você concorda com nossos<br>
+            <a href="termos.html" style="color:white;text-decoration:underline;">Termos de Uso</a> e
+            <a href="privacidade.html" style="color:white;text-decoration:underline;">Política de Privacidade</a>.
+        </p>
+    </div>
+
+    <div class="support-container" id="btnSuporteLogin">
+        <i class="fab fa-whatsapp"></i>
+        <span>Suporte</span>
+    </div>
+
+    <script type="module">
+        import { db } from './config.js';
+        import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        document.getElementById('btnSuporteLogin').onclick = async () => {
+            const mensagem = encodeURIComponent("Olá! Preciso de ajuda com o acesso ao painel.");
+            let numeroSuporte = "5511999999999";
+            try {
+                const docSnap = await getDoc(doc(db, "configuracoes", "suporte"));
+                if (docSnap.exists() && docSnap.data().numero) {
+                    numeroSuporte = docSnap.data().numero;
+                }
+            } catch (e) { console.error(e); }
+            window.location.href = `https://wa.me/${numeroSuporte.replace(/\D/g, '')}?text=${mensagem}`;
+        };
+    </script>
+</div>
+
+<!-- MODAL: ESQUECI MINHA SENHA — inalterado -->
+<div id="modalRecuperacao" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:5000; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;">
+    <div style="background:#fff; border-radius:20px; padding:30px 24px; max-width:340px; width:100%; text-align:center; position:relative; box-shadow:0 12px 40px rgba(0,0,0,0.25); animation:fadeInUp 0.3s ease;">
+
+        <button onclick="window.fecharRecuperacao()" style="position:absolute; top:14px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:#aaa; line-height:1;">&times;</button>
+
+        <div style="width:52px; height:52px; background:#fff3f0; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+            <i class="fas fa-lock" style="font-size:22px; color:#ee4d2d;"></i>
+        </div>
+
+        <h3 style="margin:0 0 6px; font-size:18px; color:#222;">Esqueci minha senha</h3>
+        <p style="font-size:13px; color:#555; margin:0 0 22px; line-height:1.5;">Informe o e-mail ou telefone vinculado à sua conta. Após a verificação das informações, a equipe da plataforma fornecerá orientações para recuperação do acesso.</p>
+
+        <input type="text" id="inputRecuperacao" placeholder="E-mail ou telefone"
+            style="width:100%; padding:13px 14px; border:1.5px solid #e0e0e0; border-radius:10px; font-size:14px; box-sizing:border-box; outline:none; color:#333; text-align:left; transition:border-color 0.2s; font-family:inherit;"
+            onfocus="this.style.borderColor='#ee4d2d'" onblur="this.style.borderColor='#e0e0e0'">
+
+        <button id="btnEnviarRecuperacao" onclick="window.enviarRecuperacao()"
+            style="width:100%; margin-top:14px; padding:14px; background:#ee4d2d; color:white; border:none; border-radius:10px; font-size:15px; font-weight:bold; cursor:pointer; font-family:inherit; transition:opacity 0.2s;">
+            ENVIAR SOLICITAÇÃO
+        </button>
+
+        <span id="statusRecuperacao" style="display:block; margin-top:12px; font-size:12px; min-height:16px;"></span>
+    </div>
+</div>
+
+<script type="module">
+    import { db } from './config.js';
+    import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    window.abrirRecuperacao = () => {
+        document.getElementById('inputRecuperacao').value = '';
+        document.getElementById('statusRecuperacao').innerText = '';
+        document.getElementById('statusRecuperacao').style.color = '#888';
+        document.getElementById('btnEnviarRecuperacao').disabled = false;
+        document.getElementById('btnEnviarRecuperacao').innerText = 'ENVIAR SOLICITAÇÃO';
+        document.getElementById('modalRecuperacao').style.display = 'flex';
+    };
+
+    window.fecharRecuperacao = () => {
+        document.getElementById('modalRecuperacao').style.display = 'none';
+    };
+
+    document.getElementById('modalRecuperacao').addEventListener('click', function(e) {
+        if (e.target === this) window.fecharRecuperacao();
+    });
+
+    window.enviarRecuperacao = async () => {
+    const contato = document.getElementById('inputRecuperacao').value.trim();
+    const status  = document.getElementById('statusRecuperacao');
+    const btn     = document.getElementById('btnEnviarRecuperacao');
+
+    if (!contato) {
+        status.style.color = '#e53935';
+        status.innerText = '⚠️ Preencha seu e-mail ou telefone.';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = 'Enviando...';
+    status.style.color = '#888';
+    status.innerText = '';
+
+    try {
+        await addDoc(collection(db, "solicitacoes_recuperacao"), {
+            contato: contato,
+            data: new Date(),
+            status: "pendente"
+        });
+
+        // Fecha o modal de recuperação
+        window.fecharRecuperacao();
+
+        // Exibe o novo modal de confirmação
+        window.mostrarModalConfirmacaoRecuperacao();
+
+    } catch (e) {
+        console.error(e);
+        status.style.color = '#e53935';
+        status.innerText = '❌ Erro ao enviar. Tente novamente.';
+        btn.disabled = false;
+        btn.innerText = 'ENVIAR SOLICITAÇÃO';
+    }
+};
+    // Modal de confirmação de envio (nova comunicação visual)
+    window.mostrarModalConfirmacaoRecuperacao = () => {
+        // Remove modal antigo se existir (evita duplicidade)
+        const modalExistente = document.getElementById('modalConfirmacaoRecuperacao');
+        if (modalExistente) modalExistente.remove();
+
+        const modalConfirm = document.createElement('div');
+        modalConfirm.id = 'modalConfirmacaoRecuperacao';
+        modalConfirm.style.cssText = `
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.55);
+            z-index: 5100;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        `;
+
+        modalConfirm.innerHTML = `
+            <div style="background:#fff; border-radius:20px; padding:30px 24px; max-width:340px; width:100%; text-align:center; position:relative; box-shadow:0 12px 40px rgba(0,0,0,0.25); animation:fadeInUp 0.3s ease;">
+                <div style="width:52px; height:52px; background:#e8f5e9; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 14px;">
+                    <i class="fas fa-check-circle" style="font-size:24px; color:#27ae60;"></i>
+                </div>
+                <h3 style="margin:0 0 8px; font-size:18px; color:#222;">Solicitação recebida</h3>
+                <p style="font-size:14px; color:#555; margin:0 0 22px; line-height:1.5;">
+                    Sua solicitação foi registrada com sucesso.<br><br>
+                    A equipe da plataforma analisará as informações fornecidas e poderá entrar em contato para confirmação dos dados antes da recuperação do acesso.
+                </p>
+                <button id="btnEntendiConfirmacao" style="width:100%; padding:14px; background:#ee4d2d; color:white; border:none; border-radius:10px; font-size:15px; font-weight:bold; cursor:pointer; font-family:inherit; transition:opacity 0.2s;">
+                    Entendi
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(modalConfirm);
+
+        const btnEntendi = document.getElementById('btnEntendiConfirmacao');
+        btnEntendi.addEventListener('click', () => {
+            modalConfirm.remove();
+        });
+
+        // Fecha ao clicar fora do conteúdo
+        modalConfirm.addEventListener('click', (e) => {
+            if (e.target === modalConfirm) modalConfirm.remove();
+        });
+    };
+</script>
+
+<script>
+    // Garante que ao pressionar voltar (Android/navegador) vai para index
+    history.replaceState({ page: 'login' }, '', window.location.href);
+
+    window.addEventListener('popstate', function(e) {
+        window.location.replace('index.html');
+    });
+
+    // bfcache: se voltar via cache e já logado, redireciona para painel
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted && localStorage.getItem('userId')) {
+            window.location.replace('painel-lojista.html');
+        }
+    });
+</script>
+
+<script type="module">
+    import { realizarLogin } from './login.js';
+
+    document.getElementById('toggleLogin').addEventListener('click', function() {
+        const input = document.getElementById('senhaL');
+        const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+        input.setAttribute('type', type);
+        this.classList.toggle('fa-eye-slash');
+    });
+
+    document.getElementById('btnEntrar').addEventListener('click', async () => {
+        const email = document.getElementById('emailL').value.trim();
+        const senha = document.getElementById('senhaL').value.trim();
+
+        if (!email || !senha) {
+            window.mostrarToast('Preencha seu e-mail e senha para continuar.', 'erro');
+            return;
+        }
+
+        const btn = document.getElementById('btnEntrar');
+        btn.disabled = true;
+        btn.innerText = "CARREGANDO...";
+
+        await realizarLogin(email, senha);
+
+        btn.disabled = false;
+        btn.innerText = "ENTRAR NO PAINEL";
+    });
+</script>
+
+</body>
+</html>

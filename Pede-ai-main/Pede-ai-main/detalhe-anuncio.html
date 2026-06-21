@@ -33,7 +33,11 @@
             -webkit-backdrop-filter: saturate(180%) blur(20px);
             z-index: 100;
             display: flex; align-items: center;
+<<<<<<< HEAD
+            padding: 14px 16px;
+=======
             padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 14px;
+>>>>>>> 96937bb (sync project)
             border-bottom: 0.5px solid rgba(0,0,0,0.1);
         }
         .back-btn {
@@ -669,7 +673,11 @@
                     } catch (err) {
                         console.error("Erro ao registrar interesse:", err);
                     }
-window.location.assign(linkWhats);
+<<<<<<< HEAD
+                    window.open(linkWhats, '_blank');
+=======
+                    window.location.assign(linkWhats);
+>>>>>>> 96937bb (sync project)
                 };
 
                 /* ── Compartilhar ──────────────────────────────── */
@@ -733,12 +741,6 @@ window.location.assign(linkWhats);
 
         document.addEventListener('DOMContentLoaded', () => {
             carregarDetalhes();
-        });
-
-        window.addEventListener('pageshow', (event) => {
-            if (event.persisted) {
-                carregarDetalhes();
-            }
         });
     </script>
 </body>

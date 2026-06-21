@@ -7,6 +7,7 @@ let filtroChip = '';
 let filtroTexto = '';
 let animationId = null;
 let isReturning = false;
+let inicializacaoEmAndamento = false; // mutex: evita inicializar() concorrente (causa raiz da duplicação)
 
 // Cache para armazenar a posição do scroll de cada categoria
 const scrollModesCache = {
@@ -169,6 +170,11 @@ function renderizacaoFoiConcluida() {
 }
 
 async function inicializar() {
+    if (inicializacaoEmAndamento) {
+        console.warn('[init] inicializar() já em andamento — chamada concorrente ignorada (evita duplicação de produtos)');
+        return;
+    }
+    inicializacaoEmAndamento = true;
     setEstadoInit(ESTADOS_INIT.INICIANDO);
 
     const removerSplash = () => {
@@ -317,6 +323,8 @@ async function inicializar() {
         } else {
             garantirRenderizacaoValida();
         }
+    } finally {
+        inicializacaoEmAndamento = false;
     }
 }
 
@@ -1039,6 +1047,10 @@ window.__tentarNovamente = function() {
         }
         return;
     }
+    // Bloqueia clique duplo enquanto uma inicialização já está rodando
+    if (inicializacaoEmAndamento) return;
+    const btn = document.querySelector('[data-offline-state] button');
+    if (btn) btn.textContent = 'Carregando...';
     // Online: reconstrói sem reload
     inicializar();
 };

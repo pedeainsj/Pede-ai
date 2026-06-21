@@ -369,11 +369,7 @@ async function denunciarAnuncio(id, titulo) {
         primeiraCarga = false;
         carregarAnunciosInicial();
         const mensagem = `Denúncia: ${titulo} (ID: ${id})`;
-<<<<<<< HEAD
-        window.open(`https://wa.me/${WHATSAPP_ADMIN}?text=${encodeURIComponent(mensagem)}`, '_blank');
-=======
         window.location.assign(`https://wa.me/${WHATSAPP_ADMIN}?text=${encodeURIComponent(mensagem)}`);
->>>>>>> 96937bb (sync project)
     } catch (error) {
         console.error('[Classifieds] Erro na denúncia:', error);
         mostrarToast('Erro ao enviar denúncia.', 'erro');

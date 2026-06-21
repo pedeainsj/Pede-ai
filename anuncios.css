@@ -30,11 +30,7 @@
 /* ─────────────────────────────────────────────────────────────── */
 .classifieds-page .classifieds-header {
     background: var(--cl-primary);
-<<<<<<< HEAD
-    padding: 16px 20px 20px;
-=======
     padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 20px;
->>>>>>> 96937bb (sync project)
     border-radius: 0 0 20px 20px;
     /* NÃO é sticky — o header principal do index já ocupa o topo  */
 }

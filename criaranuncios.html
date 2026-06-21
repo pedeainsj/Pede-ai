@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Criar Anúncio - Pede Aí</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="anuncios.css">
+    <style>
+
+        /* ===== BASE ===== */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        body {
+            margin: 0;
+            background: #f2f2f7;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            color: #1c1c1e;
+            min-height: 100vh;
+        }
+
+        /* ===== NAV BAR ===== */
+        .nav-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(242, 242, 247, 0.92);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-back {
+            position: absolute;
+            left: 16px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            color: #007aff;
+            font-size: 16px;
+            font-weight: 400;
+            text-decoration: none;
+        }
+
+        .nav-back i { font-size: 13px; }
+
+        .nav-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1c1c1e;
+            letter-spacing: -0.3px;
+        }
+
+        /* ===== CONTAINER ===== */
+        .form-container {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 24px 16px 60px;
+        }
+
+        /* ===== SECTION LABEL ===== */
+        .section-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6e6e73;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin: 0 0 8px 4px;
+        }
+
+        /* ===== CARD ===== */
+        .card {
+            background: #ffffff;
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        /* ===== FIELD ROW ===== */
+        .field-row {
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            min-height: 52px;
+            border-bottom: 0.5px solid #f2f2f7;
+        }
+
+        .field-row:last-child { border-bottom: none; }
+
+        .field-label {
+            font-size: 15px;
+            color: #1c1c1e;
+            font-weight: 400;
+            width: 90px;
+            flex-shrink: 0;
+        }
+
+        .field-row input,
+        .field-row select {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-family: inherit;
+            font-size: 15px;
+            color: #1c1c1e;
+            background: transparent;
+            text-align: right;
+            padding: 14px 0;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .field-row input::placeholder { color: #c7c7cc; }
+        .field-row select:required:invalid { color: #c7c7cc; }
+
+        .select-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 5px;
+        }
+
+        .select-wrap select { flex: 1; }
+
+        .select-wrap .chevron {
+            color: #c7c7cc;
+            font-size: 11px;
+            pointer-events: none;
+        }
+
+        /* ===== TEXTAREA ===== */
+        .field-textarea { padding: 14px 16px; }
+
+        .field-textarea textarea {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-family: inherit;
+            font-size: 15px;
+            color: #1c1c1e;
+            background: transparent;
+            resize: none;
+            line-height: 1.55;
+        }
+
+        .field-textarea textarea::placeholder { color: #c7c7cc; }
+
+        /* ===== UPLOAD ===== */
+        .upload-area { padding: 12px; }
+
+        .upload-trigger {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border: 1.5px dashed #c7c7cc;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            background: #fafafa;
+            min-height: 56px;
+            transition: background 0.15s;
+        }
+
+        .upload-trigger:active { background: #f0f0f0; }
+
+        .upload-trigger .icon-camera {
+            font-size: 24px;
+            color: #007aff;
+        }
+
+        #previewPlaceholder span {
+            font-size: 14px;
+            color: #6e6e73;
+            font-weight: 500;
+            display: block;
+            text-align: center;
+            margin-top: 2px;
+        }
+
+        #previewPlaceholder small {
+            font-size: 12px;
+            color: #c7c7cc;
+            display: block;
+            text-align: center;
+        }
+
+        /* ===== GALLERY ===== */
+        .galeria-preview {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .preview-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .remove-foto {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            width: 20px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.52);
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        /* ===== SUBMIT ===== */
+        .btn-submit {
+            width: 100%;
+            background: #007aff;
+            color: #fff;
+            border: none;
+            padding: 16px;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 17px;
+            cursor: pointer;
+            font-family: inherit;
+            letter-spacing: -0.2px;
+            transition: opacity 0.15s;
+        }
+
+        .btn-submit:active:not(:disabled) { opacity: 0.75; }
+        .btn-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* ===== MODAL ===== */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.38);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-overlay.ativo {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-box {
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border-radius: 14px;
+            width: 100%;
+            max-width: 270px;
+            overflow: hidden;
+            text-align: center;
+            transform: scale(0.88);
+            transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .modal-overlay.ativo .modal-box { transform: scale(1); }
+
+        .modal-body { padding: 22px 20px 16px; }
+
+        .modal-icon {
+            width: 52px;
+            height: 52px;
+            background: #e6f9ed;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 14px;
+        }
+
+        .modal-icon i {
+            font-size: 22px;
+            color: #34c759;
+        }
+
+        .modal-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: #1c1c1e;
+            margin: 0 0 8px;
+        }
+
+        .modal-msg {
+            font-size: 13px;
+            color: #6e6e73;
+            line-height: 1.55;
+            margin: 0;
+        }
+
+        .modal-divider {
+            height: 0.5px;
+            background: rgba(0, 0, 0, 0.12);
+            margin-top: 16px;
+        }
+
+        .modal-ok {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 14px;
+            font-size: 17px;
+            font-weight: 600;
+            color: #007aff;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        .modal-ok:active { background: #f2f2f7; }
+
+        .hidden { display: none; }
+
+    </style>
+
+    <script>
+        function voltarParaAnuncios() {
+            history.back();
+        }
+
+        function mostrarModalSucesso() {
+            document.getElementById('modalSucesso').classList.add('ativo');
+        }
+
+        function fecharModalSucesso() {
+            history.back();
+        }
+
+        // Bloquear pinch zoom e double-tap zoom
+        document.addEventListener('gesturestart', function(e) {
+            e.preventDefault();
+        }, { passive: false });
+
+        document.addEventListener('touchstart', function(e) {
+            if (e.touches.length > 1) e.preventDefault();
+        }, { passive: false });
+    </script>
+</head>
+<body>
+
+    <!-- NAV BAR -->
+    <div class="nav-bar">
+        <a href="javascript:void(0)" class="nav-back" onclick="voltarParaAnuncios()">
+            <i class="fas fa-chevron-left"></i> Voltar
+        </a>
+        <span class="nav-title">Novo Anúncio</span>
+    </div>
+
+    <!-- FORM -->
+    <form id="formAnuncio">
+        <div class="form-container">
+
+            <!-- INFORMAÇÕES -->
+            <p class="section-label">Informações</p>
+            <div class="card">
+                <div class="field-row">
+                    <span class="field-label">Categoria</span>
+                    <div class="select-wrap">
+                        <select id="categoria" required>
+                            <option value="" disabled selected>Selecionar</option>
+                            <option value="Casas">🏠 Casas</option>
+                            <option value="Veículos">🚗 Veículos</option>
+                            <option value="Eletrônicos">📱 Eletrônicos</option>
+                            <option value="Brechó">🧥 Brechó</option>
+                        </select>
+                        <i class="fas fa-chevron-right chevron"></i>
+                    </div>
+                </div>
+                <div class="field-row">
+                    <span class="field-label">Título</span>
+                    <input type="text" id="titulo" required placeholder="Ex: iPhone 13 semi-novo">
+                </div>
+                <div class="field-row">
+                    <span class="field-label">Preço</span>
+                    <input type="number" id="preco" step="0.01" required placeholder="R$ 0,00">
+                </div>
+                <div class="field-row">
+                    <span class="field-label">WhatsApp</span>
+                    <input type="tel" id="whatsapp" required placeholder="(00) 00000-0000">
+                </div>
+            </div>
+
+            <!-- FOTOS -->
+            <p class="section-label">Fotos</p>
+            <div class="card">
+                <div class="upload-area">
+                    <input type="file" id="fotosFile" accept="image/*" multiple style="display:none">
+                    <div class="upload-trigger" onclick="document.getElementById('fotosFile').click()">
+                        <i class="fas fa-camera icon-camera"></i>
+                        <div id="previewPlaceholder">
+                            <span>Adicionar fotos</span>
+                            <small>Até 10 fotos</small>
+                        </div>
+                    </div>
+                    <div id="galeriaPreview" class="galeria-preview"></div>
+                </div>
+            </div>
+
+            <!-- DESCRIÇÃO -->
+            <p class="section-label">Descrição</p>
+            <div class="card">
+                <div class="field-textarea">
+                    <textarea id="descricao" rows="5" required placeholder="Descreva seu produto com detalhes..."></textarea>
+                </div>
+            </div>
+
+            <!-- PUBLICAR -->
+            <button type="submit" class="btn-submit" id="btnEnviar">Publicar Anúncio</button>
+
+        </div>
+    </form>
+
+    <!-- MODAL SUCESSO (estilo iOS) -->
+    <div class="modal-overlay" id="modalSucesso">
+        <div class="modal-box">
+            <div class="modal-body">
+                <div class="modal-icon">
+                    <i class="fas fa-check"></i>
+                </div>
+                <p class="modal-title">Anúncio enviado</p>
+                <p class="modal-msg">Seu anúncio foi enviado para análise. Em breve ele será aprovado e nossa equipe poderá entrar em contato caso seja necessário.</p>
+            </div>
+            <div class="modal-divider"></div>
+            <button class="modal-ok" onclick="fecharModalSucesso()">OK</button>
+        </div>
+    </div>
+
+    <script type="module" src="config.js"></script>
+    <script type="module" src="criaranuncios.js"></script>
+</body>
+</html>

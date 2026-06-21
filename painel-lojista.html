@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- META TAGS APPLE -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pede Aí">
+    <link rel="apple-touch-icon" href="icon-180x180.png">
+    
+    <title>Painel Pro | Pede Aí</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #ee4d2d; --primary-light: #ff6b4a; --bg: #f8f9fa; --white: #ffffff; --text: #1e293b; --text-light: #64748b; --success: #10b981; --comida: #f59e0b; --border: #e2e8f0; --radius: 16px; --radius-sm: 12px; }
+        /* CORREÇÃO: stack iOS + fallback */
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); margin: 0; color: var(--text); }
+        
+<<<<<<< HEAD
+        header { background: rgba(255,255,255,0.96); backdrop-filter: blur(10px); padding: 12px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(0,0,0,0.05); }
+=======
+        header { background: rgba(255,255,255,0.96); backdrop-filter: blur(10px); padding: calc(12px + env(safe-area-inset-top, 0px)) 20px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(0,0,0,0.05); }
+>>>>>>> 96937bb (sync project)
+        .perfil-area { display: flex; align-items: center; gap: 12px; }
+        .foto-perfil { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); background: #eee; }
+        .loja-info b { display: block; font-size: 16px; }
+        .loja-info span { font-size: 12px; color: #777; }
+
+        .btn-edit-perfil-head { background: #f0f0f0; border: none; padding: 5px 10px; border-radius: 5px; font-size: 11px; font-weight: bold; cursor: pointer; color: #555; margin-top: 3px; display: inline-flex; align-items: center; gap: 5px; }
+
+        .painel-edicao-perfil { display: none; background: white; border-bottom: 2px solid #eee; padding: 20px; animation: slideDown 0.3s ease; }
+        @keyframes slideDown { from { transform: translateY(-10%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .bloco-contexto { background: white; margin: 16px auto; max-width: 800px; border-radius: var(--radius); padding: 18px; box-shadow: 0 4px 12px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02); border: 1px solid var(--border); }
+        .titulo-contexto { font-size: 11px; font-weight: bold; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .opcoes-contexto { display: flex; gap: 15px; }
+        .radio-contexto { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; font-size: 14px; font-weight: 600; color: #666; padding: 12px; border-radius: 8px; transition: 0.2s; border: 1px solid #eee; }
+        .radio-contexto input { display: none; }
+        .radio-contexto.active { background: #fff5f2; color: var(--primary); border-color: var(--primary); }
+        .radio-contexto.active.comida { background: #fffbeb; color: #856404; border-color: var(--comida); }
+
+        /* CORREÇÃO: safe-area no container principal */
+        .container { max-width: 800px; margin: 0 auto; padding: 0 15px calc(50px + env(safe-area-inset-bottom, 0px)); }
+        
+        .card-admin { background: white; border-radius: var(--radius); padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02); margin-bottom: 20px; border: 1px solid var(--border); transition: box-shadow 0.2s; }
+        .card-admin:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        
+        .card-gatilho-publicar { background: #fff5f2; border: 2px dashed var(--primary); color: var(--primary); padding: 24px; border-radius: var(--radius); text-align: center; cursor: pointer; margin-bottom: 20px; font-weight: 600; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .card-gatilho-publicar i { font-size: 28px; }
+        .card-gatilho-publicar:hover { background: #fff5f2; transform: scale(1.01); }
+        .card-gatilho-publicar i { font-size: 24px; }
+
+        .form-group { margin-bottom: 15px; }
+        label { font-size: 13px; font-weight: bold; color: #555; display: block; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        /* Corrige zoom automático no iOS - garante que inputs tenham pelo menos 16px */
+        input, select, textarea, [contenteditable="true"] {
+            -webkit-text-size-adjust: 100%;
+        }
+        
+        .btn-post { background: var(--primary); color: white; border: none; padding: 14px 20px; border-radius: 40px; width: 100%; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.2s ease; margin-top: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .btn-post:hover { background: var(--primary-light); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(238,77,45,0.2); }
+        .btn-post:hover { background: #d73d1f; }
+        .btn-post:disabled { background: #ccc; cursor: not-allowed; }
+
+        .modo-compacto { 
+            background: #f0fff4; border: 2px dashed var(--success); padding: 15px; border-radius: 10px; cursor: pointer; 
+            display: flex; justify-content: space-between; align-items: center; transition: 0.2s;
+        }
+        .modo-compacto:hover { background: #e6ffed; }
+        .status-badge { background: var(--success); color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: bold; text-transform: uppercase; }
+
+        .perfil-row { display: flex; gap: 20px; align-items: center; max-width: 800px; margin: 0 auto; }
+        .upload-compact { position: relative; width: 80px; height: 80px; min-width: 80px; border: 2px dashed #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; background: #fafafa; overflow: hidden; }
+        .upload-compact i { font-size: 20px; color: #999; }
+        .upload-compact input { position: absolute; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
+        .preview-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center; z-index: 1; display: none; }
+
+        .input-inline-btn { display: flex; gap: 8px; }
+        .btn-mini { width: auto; padding: 0 20px; margin-top: 0; white-space: nowrap; font-size: 13px; }
+
+        .grid-vitrine { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
+        .prod-card { background: white; border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border); position: relative; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; }
+        .prod-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+        .prod-img { width: 100%; aspect-ratio: 1/1; object-fit: cover; object-position: top center; }
+        .prod-details { padding: 10px; flex-grow: 1; }
+        .prod-name { font-size: 14px; font-weight: 600; height: 38px; overflow: hidden; margin-bottom: 5px; }
+        .prod-price { color: var(--primary); font-weight: 800; font-size: 16px; }
+        
+        .btn-del { position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); color: white; border: none; width: 25px; height: 25px; border-radius: 50%; cursor: pointer; z-index: 5; }
+
+        .prod-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px; background: #f8fafc; border-top: 1px solid var(--border); }
+        .btn-ctrl { font-size: 10px; padding: 8px 4px; border-radius: 20px; border: 1px solid var(--border); background: white; cursor: pointer; font-weight: 600; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: all 0.15s; }
+        .btn-ctrl:active { transform: scale(0.96); }
+        .btn-ctrl.active-turbo { background: #fff5f2; border-color: var(--primary); color: var(--primary); }
+        .btn-ctrl.active-promo { background: #f0fff4; border-color: var(--success); color: var(--success); }
+        .btn-ctrl i { font-size: 12px; }
+
+        .form-edit-card { padding: 10px; display: none; background: #fff; border-top: 1px solid #eee; }
+        .form-edit-card input { padding: 6px; font-size: 12px; margin-bottom: 5px; }
+
+        .config-comida, .config-roupa { display: none; border-top: 1px dashed #ddd; margin-top: 15px; padding-top: 15px; }
+        .item-config { display: flex; gap: 5px; margin-bottom: 8px; }
+        .btn-add-config { background: #eee; border: none; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer; margin-bottom: 10px; }
+        
+        .aviso-plano { background: #fff3cd; color: #856404; padding: 10px; border-radius: 8px; font-size: 12px; margin-bottom: 15px; border: 1px solid #ffeeba; display: none; }
+
+        .tamanhos-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+        .tamanho-item { display: flex; align-items: center; gap: 5px; font-size: 14px; background: #f0f0f0; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        .tamanho-item input { width: auto; }
+
+        .switch-container { display: flex; align-items: center; justify-content: space-between; background: #f1f3f5; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-switch { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider-switch:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider-switch { background-color: #28a745; }
+        input:checked + .slider-switch:before { transform: translateX(20px); }
+
+        .badge-turbo { position: absolute; top: 5px; left: 5px; background: var(--primary); color: white; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+        .badge-promo { position: absolute; top: 25px; left: 5px; background: var(--success); color: white; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+/* Pop-up de Sucesso Quadrado */
+.popup-copiado-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.popup-copiado-box {
+    background: #28a745; /* Verde Sucesso */
+    color: white;
+    width: 300px;
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    border: 3px solid #ffffff;
+    animation: scaleIn 0.3s ease-out;
+}
+
+.btn-fechar-popup {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #ff0000; /* X Vermelho */
+    color: white;
+    border: 2px solid white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+@keyframes toastSlideUp {
+    from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes toastSlideDown {
+    from { opacity: 1; transform: translateX(-50%) translateY(0); }
+    to   { opacity: 0; transform: translateX(-50%) translateY(20px); }
+}
+    .badge-video {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: #3b82f6;
+            color: white;
+            font-size: 9px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: bold;
+            z-index: 6;
+            pointer-events: none;
+        }
+    /* Estilos para cards modernizados com menu dropdown */
+.prod-card {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.prod-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+}
+.prod-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: white;
+    border-bottom: 1px solid #f0f0f0;
+}
+.prod-badges {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+.badge-turbo, .badge-promo, .badge-video {
+    font-size: 9px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-weight: bold;
+}
+.badge-turbo {
+    background: var(--primary);
+    color: white;
+}
+.badge-promo {
+    background: var(--success);
+    color: white;
+}
+.badge-video {
+    background: #3b82f6;
+    color: white;
+}
+.prod-menu-btn {
+    background: none;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+    color: #666;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+.prod-menu-btn:hover {
+    background: #f0f0f0;
+}
+.prod-img {
+    width: 100%;
+    aspect-ratio: 1/1;
+    object-fit: cover;
+}
+.prod-details {
+    padding: 12px;
+}
+.prod-name {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+.prod-price {
+    color: var(--primary);
+    font-weight: 800;
+    font-size: 16px;
+}
+.prod-dropdown {
+    position: absolute;
+    top: 48px;
+    right: 12px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    min-width: 180px;
+    z-index: 100;
+    overflow: hidden;
+    animation: fadeIn 0.2s ease;
+}
+.dropdown-item {
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+    border-bottom: 1px solid #f0f0f0;
+}
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+.dropdown-item:hover {
+    background: #f8f9fa;
+}
+.dropdown-item i {
+    width: 20px;
+    font-size: 14px;
+    color: #666;
+}
+.dropdown-item.danger {
+    color: #dc3545;
+}
+.dropdown-item.danger i {
+    color: #dc3545;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.form-edit-card {
+    margin: 0 12px 12px;
+    background: #f8fafc;
+    border-radius: 12px;
+}
+    /* ===== MODAL EDITAR PERFIL — VISUAL PROFISSIONAL ===== */
+        .modal-perfil-inner {
+            background: white;
+            border-radius: 24px;
+            max-width: 400px;
+            width: 100%;
+            position: relative;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.18);
+            animation: slideDown 0.3s ease;
+            max-height: 92vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 0 0 24px 0;
+        }
+
+        .mp-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 20px 16px 20px;
+            border-bottom: 1px solid #f0f0f0;
+            position: sticky;
+            top: 0;
+            background: white;
+            border-radius: 24px 24px 0 0;
+            z-index: 1;
+        }
+
+        .mp-titulo {
+            font-size: 17px;
+            font-weight: 700;
+            color: #1e293b;
+            letter-spacing: -0.3px;
+        }
+
+        .mp-fechar {
+            background: #f1f5f9;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            transition: background 0.2s;
+        }
+        .mp-fechar:hover { background: #e2e8f0; }
+
+        .mp-foto-bloco {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 24px 20px 8px 20px;
+        }
+
+        .mp-foto-upload {
+            width: 96px !important;
+            height: 96px !important;
+            border: 3px solid #ee4d2d !important;
+            box-shadow: 0 4px 16px rgba(238,77,45,0.15);
+        }
+
+        .mp-foto-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #ee4d2d;
+            letter-spacing: 0.2px;
+        }
+
+        .mp-secao-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            padding: 16px 20px 6px 20px;
+        }
+
+        .mp-secao-card {
+            background: #f8fafc;
+            border-radius: 14px;
+            margin: 0 16px;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        .mp-campo {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .mp-campo-ultimo {
+            border-bottom: none;
+        }
+
+        .mp-campo label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .mp-campo input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            box-sizing: border-box;
+            font-size: 15px;
+            background: white;
+            color: #1e293b;
+            transition: border-color 0.2s;
+        }
+        .mp-campo input:focus {
+            outline: none;
+            border-color: #ee4d2d;
+        }
+
+        .mp-btn-salvar {
+            margin: 16px 16px 0 16px !important;
+            width: calc(100% - 32px) !important;
+            border-radius: 12px !important;
+        }
+
+        .mp-btn-seguranca {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 15px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            color: #1e293b;
+            text-align: left;
+        }
+        .mp-btn-seguranca:active { background: #f1f5f9; }
+
+        .mp-btn-icone {
+            width: 20px;
+            text-align: center;
+        }
+
+        .mp-btn-seta {
+            margin-left: auto;
+            font-size: 11px;
+            color: #cbd5e1;
+        }
+
+        .mp-zona-perigo {
+            margin: 24px 16px 0 16px;
+            background: #fff5f5;
+            border: 1px solid #fecaca;
+            border-radius: 14px;
+            padding: 16px;
+        }
+
+        .mp-perigo-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: #f87171;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            margin-bottom: 12px;
+        }
+
+        .mp-btn-excluir {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 13px 16px;
+            border-radius: 10px;
+            width: 100%;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        .mp-btn-excluir:hover { background: #b91c1c; }
+        /* ===== FIM MODAL EDITAR PERFIL ===== */
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="perfil-area">
+            <img src="https://via.placeholder.com/50" id="fotoLoja" class="foto-perfil">
+            <div class="loja-info">
+                <b id="nomeLojaHead">Minha Loja</b>
+                <button class="btn-edit-perfil-head" onclick="togglePainelPerfil()"><i class="fa-solid fa-pen"></i> Editar perfil</button>
+            </div>
+        </div>
+        <div style="text-align: right;">
+            <button id="btnSair" style="border:none; background:none; font-size:20px; color:#999; cursor:pointer;"><i class="fa-solid fa-right-from-bracket"></i></button>
+        </div>
+    </header>
+
+    <div id="painelPerfil" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:2000; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;">
+        <div class="modal-perfil-inner">
+
+            <!-- Cabeçalho do modal -->
+            <div class="mp-header">
+                <span class="mp-titulo">Editar Perfil</span>
+                <button onclick="togglePainelPerfil()" class="mp-fechar">&times;</button>
+            </div>
+
+            <!-- Foto de perfil -->
+            <div class="mp-foto-bloco">
+                <div class="upload-compact mp-foto-upload">
+                    <div class="preview-overlay" id="previewPerfil" style="display:block;"></div>
+                    <i class="fa-solid fa-camera" style="font-size:22px;"></i>
+                    <input type="file" id="inputFotoPerfil" accept="image/*">
+                </div>
+                <span class="mp-foto-label">Editar foto de perfil</span>
+            </div>
+
+            <!-- Seção: Dados da Conta -->
+            <div class="mp-secao-label">Dados da Conta</div>
+            <div class="mp-secao-card">
+                <div class="mp-campo">
+                    <label>Nome da Loja (<span id="txtContextoPerfil">Geral</span>)</label>
+                    <input type="text" id="inputNomeLoja" placeholder="Nome da sua loja">
+                </div>
+                <div class="mp-campo mp-campo-ultimo">
+                    <label><i class="fa-brands fa-whatsapp" style="color:#25d366;"></i> WhatsApp de Pedidos</label>
+                    <!-- CORREÇÃO: type="tel" ao invés de number para melhor teclado iOS -->
+                    <input type="tel" id="inputWhatsLoja" placeholder="Ex: 11999999999">
+                    <small style="font-size:10px; color:#aaa; margin-top:4px; display:block;">Apenas números com DDD</small>
+                </div>
+            </div>
+
+            <button id="btnSalvarPerfilGeral" class="btn-post mp-btn-salvar">Salvar Alterações</button>
+            <span id="uploadStatus" style="font-size: 11px; color: #888; margin-top: 8px; display: block; text-align:center;"></span>
+
+            <!-- Seção: Segurança -->
+            <div class="mp-secao-label" style="margin-top:24px;">Segurança</div>
+            <div class="mp-secao-card">
+                <button onclick="window.abrirModalAlterarSenha()" class="mp-btn-seguranca">
+                    <i class="fa-solid fa-key mp-btn-icone" style="color:#ee4d2d;"></i>
+                    <span>Alterar Senha</span>
+                    <i class="fa-solid fa-chevron-right mp-btn-seta"></i>
+                </button>
+            </div>
+
+            <!-- Seção: Zona de Perigo -->
+            <div class="mp-zona-perigo">
+                <div class="mp-perigo-label">Zona de Perigo</div>
+                <button id="btnExcluirContaModal" class="mp-btn-excluir">
+                    <i class="fa-solid fa-trash"></i> Excluir conta
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL ALTERAR SENHA (com scroll iOS) -->
+    <div id="modalAlterarSenha" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:3000; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;">
+        <div style="background:white; padding:24px; border-radius:28px; max-width:380px; width:100%; text-align:center; position:relative; box-shadow:0 20px 40px rgba(0,0,0,0.15); animation: slideDown 0.3s ease; max-height: 90vh; overflow-y: auto; -webkit-overflow-scrolling: touch;">
+            <button onclick="window.fecharModalAlterarSenha()" style="position:absolute; top:15px; right:15px; background:none; border:none; font-size:22px; cursor:pointer; color:#999;">&times;</button>
+
+            <i class="fa-solid fa-lock" style="font-size: 36px; color: #ee4d2d; margin-bottom: 12px;"></i>
+            <h3 style="margin:0 0 20px; color:#333;">Alterar Senha</h3>
+
+            <div style="text-align:left; margin-bottom:12px;">
+                <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:5px;">Nova Senha</label>
+                <input type="password" id="inputNovaSenha" placeholder="Mínimo 4 caracteres" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:12px; box-sizing:border-box; font-size:16px;">
+            </div>
+
+            <div style="text-align:left; margin-bottom:20px;">
+                <label style="font-size:13px; font-weight:bold; color:#555; display:block; margin-bottom:5px;">Confirmar Nova Senha</label>
+                <input type="password" id="inputConfirmarSenha" placeholder="Repita a nova senha" style="width:100%; padding:12px; border:1px solid #ddd; border-radius:12px; box-sizing:border-box; font-size:16px;">
+            </div>
+
+            <button id="btnConfirmarSenha" onclick="window.salvarNovaSenha()" style="background:#ee4d2d; color:white; border:none; padding:13px; border-radius:8px; width:100%; font-weight:bold; font-size:15px; cursor:pointer;">
+                SALVAR NOVA SENHA
+            </button>
+            <span id="statusAlterarSenha" style="font-size:12px; margin-top:10px; display:block; color:#666;"></span>
+        </div>
+    </div>
+
+    <div class="bloco-contexto" id="seletorContexto" style="padding: 18px 15px;">
+        <div class="titulo-contexto" style="font-size:10px; font-weight:700; color:#bbb; text-transform:uppercase; letter-spacing:1.5px; margin-bottom:14px; padding-bottom:0; border:none;">
+            <i class="fa-solid fa-store" style="margin-right:5px; color:#ee4d2d;"></i> Minha Loja — Escolha onde publicar
+        </div>
+        <div class="opcoes-contexto" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+
+            <label class="radio-contexto active" id="labelCtxGeral"
+                style="flex-direction:column; gap:6px; padding:16px 10px; border-radius:12px; text-align:center; cursor:pointer; transition:all 0.2s;">
+                <input type="radio" name="ctxLoja" value="Geral" checked
+                    onchange="trocarContexto('Geral'); mostrarModalSetor('geral')">
+                <span style="font-size:26px; line-height:1;">🛍️</span>
+                <span style="font-size:13px; font-weight:700; line-height:1.3;">Produtos<br>Gerais</span>
+                <span style="font-size:10px; font-weight:400; color:#999; margin-top:2px;">Vitrine / Loja</span>
+            </label>
+
+            <label class="radio-contexto" id="labelCtxComida"
+                style="flex-direction:column; gap:6px; padding:16px 10px; border-radius:12px; text-align:center; cursor:pointer; transition:all 0.2s;">
+                <input type="radio" name="ctxLoja" value="Comida"
+                    onchange="trocarContexto('Comida'); mostrarModalSetor('comida')">
+                <span style="font-size:26px; line-height:1;">🍔</span>
+                <span style="font-size:13px; font-weight:700; line-height:1.3;">Comida &amp;<br>Delivery</span>
+                <span style="font-size:10px; font-weight:400; color:#999; margin-top:2px;">Cardápio / Gourmet</span>
+            </label>
+
+        </div>
+    </div>
+<div class="bloco-contexto" style="margin-top: 0; border-top: 1px solid #eee; display: flex; flex-direction: column; gap: 10px;">
+    <div class="titulo-contexto">Divulgação Digital</div>
+    <div style="display: flex; gap: 10px;">
+        <button id="btn-link-cardapio" onclick="document.getElementById('inputLinkCopia').value = gerarLinkCartaoVisita('gourmet'); copiarLinkBotao();" class="btn-edit-perfil-head" style="display: none; flex: 1; justify-content: center; padding: 10px; background: #fff5f2; color: var(--primary);">
+    <i class="fa-solid fa-id-card"></i> Link Modo Cardápio
+</button>
+
+<button id="btn-link-vitrine" onclick="document.getElementById('inputLinkCopia').value = gerarLinkCartaoVisita('produto'); copiarLinkBotao();" class="btn-edit-perfil-head" style="display: flex; flex: 1; justify-content: center; padding: 10px; background: #f0f9ff; color: #007bff;">
+    <i class="fa-solid fa-store"></i> Link Modo Vitrine
+</button>
+    </div>
+
+    <div id="area-link-gerado" style="display: none; margin-top: 16px; padding: 16px; border-radius: 20px; background: #ffffff; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,0.02); animation: slideDown 0.3s ease;">
+        <div style="text-align: center; margin-bottom: 12px;">
+            <div id="iconeLink" style="font-size: 24px; margin-bottom: 5px;"></div>
+            <strong id="labelTipoLink" style="display: block; font-size: 14px; color: #333;"></strong>
+            <span style="font-size: 12px; color: #666;">Copie o link abaixo e envie para seus clientes:</span>
+        </div>
+        
+        <div style="background: white; border: 1px solid #ddd; border-radius: 8px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);">
+            <input type="text" id="inputLinkCopia" readonly style="border: none; background: transparent; font-family: monospace; font-size: 13px; color: #007bff; flex-grow: 1; outline: none;" onclick="this.select()">
+            <button onclick="copiarLinkBotao()" style="background: #444; color: white; border: none; padding: 8px 15px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 12px; transition: 0.2s;">
+                <i class="fa-solid fa-copy"></i> COPIAR
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Lógica para organizar a exibição sem conflitos
+    (function() {
+        const interval = setInterval(() => {
+            if (window.trocarContexto) {
+                const funcOriginal = window.trocarContexto;
+                window.trocarContexto = function(contexto) {
+                    funcOriginal(contexto); // Executa a lógica do ficheiro JS
+                    
+                    const cardapio = document.getElementById('btn-link-cardapio');
+                    const vitrine = document.getElementById('btn-link-vitrine');
+                    const area = document.getElementById('area-link-gerado');
+
+                    if(area) area.style.display = 'none';
+
+                    if (contexto === 'Comida') {
+                        cardapio.style.setProperty('display', 'flex', 'important');
+                        vitrine.style.setProperty('display', 'none', 'important');
+                    } else {
+                        cardapio.style.setProperty('display', 'none', 'important');
+                        vitrine.style.setProperty('display', 'flex', 'important');
+                    }
+                };
+                clearInterval(interval);
+            }
+        }, 200);
+    })();
+</script>
+    <div class="container">
+        
+        <div id="msgAvisoAdmin" class="aviso-plano"></div>
+
+        <div id="cardGatilhoPublicar" class="card-gatilho-publicar" onclick="toggleFormPublicar()">
+            <i class="fa-solid fa-circle-plus"></i>
+            <span>PUBLICAR NOVO EM <span id="txtBtnPublicarContexto">GERAL</span></span>
+        </div>
+
+        <div class="card-admin" id="containerFormPublicar" style="display:none; border: 2px solid var(--primary);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                <h3 style="margin:0;">🚀 Publicar em <span id="txtContextoForm">Geral</span></h3>
+                <button onclick="toggleFormPublicar()" style="background:none; border:none; font-size:20px; cursor:pointer;">&times;</button>
+            </div>
+            
+            <div id="restricaoCategoria" class="aviso-plano" style="display:block; margin-top:0; background:#e2e3e5; color:#383d41; border-color:#d6d8db;">
+                Verificando permissões...
+            </div>
+
+            <div class="form-group">
+                <label>Nome do Produto</label>
+                <input type="text" id="pNome" placeholder="Ex: Camiseta Branca">
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div class="form-group">
+                    <label>Preço Base</label>
+                    <input type="text" id="pPreco" placeholder="0,00">
+                </div>
+                <div class="form-group">
+                    <label>Setor</label>
+                    <select id="pCategoria" onchange="toggleFormFields()">
+                        <option value="Geral">🛒 Geral</option>
+                        <option value="Comida">🍔 Comida / Delivery</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" id="groupTipoProduto">
+                <label>Tipo de Produto</label>
+                <select id="pTipo" onchange="toggleRoupaConfig()" style="color:#333;">
+                    <option value="" disabled selected style="color:#aaa;">— Selecione o tipo do produto —</option>
+                    <option value="comum">📦 Produto Comum</option>
+                    <option value="roupa">👕 Roupa / Vestuário</option>
+                </select>
+            </div>
+
+            <div id="area-roupa-config" class="config-roupa">
+                <label>Tamanhos Disponíveis</label>
+                <div class="tamanhos-grid">
+                    <label class="tamanho-item"><input type="checkbox" name="tam" value="P"> P</label>
+                    <label class="tamanho-item"><input type="checkbox" name="tam" value="M"> M</label>
+                    <label class="tamanho-item"><input type="checkbox" name="tam" value="G"> G</label>
+                    <label class="tamanho-item"><input type="checkbox" name="tam" value="GG"> GG</label>
+                    <label class="tamanho-item"><input type="checkbox" name="tam" value="EG"> EG</label>
+                </div>
+                <label>Outras Numerações (separe por vírgula)</label>
+                <input type="text" id="pNumeracao" placeholder="Ex: 38, 40, 42">
+            </div>
+
+            <div class="form-group">
+                <label>Fotos do Produto</label>
+                <label for="pFoto" id="labelUploadFoto" style="display:flex; align-items:center; gap:12px; cursor:pointer; border:2px dashed #ddd; border-radius:10px; padding:14px 16px; background:#fafafa; transition:border-color 0.2s;">
+                    <div id="previewFotoForm" style="width:52px; height:52px; border-radius:8px; background:#f0f0f0; border:1px solid #e0e0e0; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;">
+                        <i class="fa-solid fa-image" style="font-size:22px; color:#bbb;" id="iconeFotoForm"></i>
+                        <img id="imgPreviewForm" src="" style="display:none; width:100%; height:100%; object-fit:cover; object-position:top center;" alt="">
+                    </div>
+                    <div>
+                        <span id="textoUploadForm" style="font-size:13px; font-weight:700; color:#555; display:block;">Toque para escolher foto(s)</span>
+                        <span style="font-size:11px; color:#aaa;">JPG, PNG — várias fotos permitidas</span>
+                    </div>
+                </label>
+                <input type="file" id="pFoto" multiple accept="image/*" style="display:none;" onchange="previewFotoForm(this)">
+            </div>
+
+            <div class="form-group">
+                <label>Descrição</label>
+                <textarea id="pDesc" rows="3" placeholder="Detalhes do seu produto..."></textarea>
+            </div>
+
+<div id="group-adicionais-produto" style="display:none; background:#f0f4ff; border:1px solid #4a6cf7; border-radius:8px; padding:12px; margin-bottom:15px;">
+    <strong style="font-size:13px; color:#1a3a8f; display:block; margin-bottom:6px;">➕ Adicionais deste produto</strong>
+    <p style="margin:0 0 10px; font-size:11px; color:#666;">Ex: +1 Ovo, +Queijo Extra — opcionais que o cliente pode adicionar</p>
+    <div id="lista-adicionais-produto"></div>
+    <button type="button" class="btn-add-config" onclick="adicionarLinhaAdicional()">+ Adicionar opção</button>
+</div>
+            <!-- Campo de Vídeo Opcional -->
+            <div class="form-group">
+                <label>Vídeo do Produto (opcional, até 30 segundos)</label>
+                <label for="pVideo" id="labelUploadVideo" style="display:flex; align-items:center; gap:12px; cursor:pointer; border:2px dashed #ddd; border-radius:10px; padding:14px 16px; background:#fafafa; transition:border-color 0.2s;">
+                    <div id="previewVideoForm" style="width:52px; height:52px; border-radius:8px; background:#f0f0f0; border:1px solid #e0e0e0; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;">
+                        <i class="fa-solid fa-video" style="font-size:22px; color:#bbb;" id="iconeVideoForm"></i>
+                        <video id="videoPreview" style="display:none; width:100%; height:100%; object-fit:cover;" muted></video>
+                    </div>
+                    <div>
+                        <span id="textoUploadVideo" style="font-size:13px; font-weight:700; color:#555; display:block;">Toque para escolher vídeo (MP4, MOV, WebM)</span>
+                        <span style="font-size:11px; color:#aaa;">Máximo 30 segundos — 1 vídeo por produto</span>
+                    </div>
+                </label>
+                <input type="file" id="pVideo" accept="video/mp4,video/quicktime,video/webm" style="display:none;" onchange="previewVideo(this)">
+            </div>
+
+            <button id="btn-salvar" class="btn-post">PUBLICAR NA VITRINE</button>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding:0 5px;">
+            <h3 style="margin:0; font-size: 16px;">Sua Vitrine em <span id="txtContextoLista">Geral</span></h3>
+            <span style="font-size:11px; background:#eee; padding:4px 8px; border-radius:20px;" id="contadorProd">...</span>
+        </div>
+        
+        <div class="grid-vitrine" id="lista-produtos"></div>
+
+    </div>
+<!-- MODAL ORIENTAÇÃO DE SETOR -->
+<div id="modalSetor" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.45); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); z-index:4000; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; animation:fadeInBg 0.25s ease;">
+    <div id="modalSetorBox" style="background:white; border-radius:20px; padding:28px 24px; max-width:320px; width:100%; text-align:center; position:relative; box-shadow:0 16px 40px rgba(0,0,0,0.18); animation:scaleInModal 0.25s ease;">
+
+        <div id="modalSetorIcone" style="font-size:48px; margin-bottom:12px; line-height:1;">🛍️</div>
+
+        <div id="modalSetorTag" style="display:inline-block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1.5px; padding:3px 12px; border-radius:20px; margin-bottom:12px; background:#fff5f2; color:#ee4d2d;">
+            Produtos Gerais
+        </div>
+
+        <h3 id="modalSetorTitulo" style="margin:0 0 8px; font-size:17px; color:#222; font-weight:800;">
+            Você está na Vitrine Geral
+        </h3>
+        <p id="modalSetorDesc" style="margin:0 0 22px; font-size:13px; color:#777; line-height:1.6;">
+            Os produtos publicados aqui aparecerão na <strong>vitrine geral</strong> de produtos da sua loja.
+        </p>
+
+        <button onclick="fecharModalSetor()" style="background:#ee4d2d; color:white; border:none; padding:13px 30px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; width:100%; font-family:inherit; transition:opacity 0.2s;">
+            ✅ OK, ENTENDI
+        </button>
+    </div>
+</div>
+
+<style>
+@keyframes fadeInBg {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+@keyframes scaleInModal {
+    from { opacity: 0; transform: scale(0.9) translateY(10px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+</style>
+
+<script>
+    const _setorConfig = {
+        geral: {
+            icone: '🛍️',
+            tag: 'Produtos Gerais',
+            tagBg: '#fff5f2',
+            tagCor: '#ee4d2d',
+            titulo: 'Você está na Vitrine Geral',
+            desc: 'Os produtos publicados aqui aparecerão na <strong>vitrine geral</strong> de produtos da sua loja.',
+            btnCor: '#ee4d2d'
+        },
+        comida: {
+            icone: '🍔',
+            tag: 'Comida & Delivery',
+            tagBg: '#fffbeb',
+            tagCor: '#856404',
+            titulo: 'Você está no Cardápio Gourmet',
+            desc: 'Os produtos publicados aqui aparecerão na área de <strong>delivery e cardápio</strong> da sua loja.',
+            btnCor: '#ffc107'
+        }
+    };
+
+    window.mostrarModalSetor = (tipo) => {
+        const cfg = _setorConfig[tipo];
+        if (!cfg) return;
+
+        document.getElementById('modalSetorIcone').innerText  = cfg.icone;
+        document.getElementById('modalSetorTag').innerText    = cfg.tag;
+        document.getElementById('modalSetorTag').style.background = cfg.tagBg;
+        document.getElementById('modalSetorTag').style.color  = cfg.tagCor;
+        document.getElementById('modalSetorTitulo').innerText = cfg.titulo;
+        document.getElementById('modalSetorDesc').innerHTML   = cfg.desc;
+        document.querySelector('#modalSetor button').style.background = cfg.btnCor;
+
+        const modal = document.getElementById('modalSetor');
+        modal.style.display = 'flex';
+    };
+
+    window.fecharModalSetor = () => {
+        document.getElementById('modalSetor').style.display = 'none';
+    };
+
+    // Fecha ao clicar fora do card
+    document.getElementById('modalSetor').addEventListener('click', function(e) {
+        if (e.target === this) fecharModalSetor();
+    });
+</script>
+    <script type="module" src="./painel-lojista.js"></script>
+    <script>
+        function togglePainelPerfil() {
+            const p = document.getElementById('painelPerfil');
+            p.style.display = p.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function toggleFormPublicar() {
+            const f = document.getElementById('containerFormPublicar');
+            const g = document.getElementById('cardGatilhoPublicar');
+            if(f.style.display === 'none') {
+                f.style.display = 'block';
+                g.style.display = 'none';
+                window.scrollTo({ top: f.offsetTop - 100, behavior: 'smooth' });
+            } else {
+                f.style.display = 'none';
+                g.style.display = 'flex';
+            }
+        }
+
+        function toggleFormFields() {
+    const cat = document.getElementById('pCategoria').value;
+    const groupTipo = document.getElementById('groupTipoProduto');
+    const groupAdicionais = document.getElementById('group-adicionais-produto');
+    
+    if(cat === 'Comida') {
+        groupTipo.style.display = 'none';
+        if(groupAdicionais) groupAdicionais.style.display = 'block';
+    } else {
+        groupTipo.style.display = 'block';
+        if(groupAdicionais) groupAdicionais.style.display = 'none';
+    }
+    toggleRoupaConfig();
+}
+
+        function toggleRoupaConfig() {
+            const tipo = document.getElementById('pTipo').value;
+            const cat = document.getElementById('pCategoria').value;
+            const areaRoupa = document.getElementById('area-roupa-config');
+            
+            if (tipo === 'roupa' && cat === 'Geral') {
+                areaRoupa.style.display = 'block';
+            } else {
+                areaRoupa.style.display = 'none';
+            }
+        }
+
+function adicionarLinhaAdicional(nome = '', preco = '') {
+    const container = document.getElementById('lista-adicionais-produto');
+    const div = document.createElement('div');
+    div.className = 'item-config';
+    div.innerHTML = `
+        <input type="text" placeholder="Ex: +1 Ovo" class="adic-nome" value="${nome}" style="flex:1;">
+        <input type="text" placeholder="R$ 0,00" class="adic-preco" value="${preco}" style="width:80px;">
+        <button type="button" onclick="this.parentElement.remove()" style="background:none; border:none; color:red; cursor:pointer; font-size:18px;">&times;</button>
+    `;
+    container.appendChild(div);
+}
+function previewFotoForm(input) {
+            const preview = document.getElementById('imgPreviewForm');
+            const icone = document.getElementById('iconeFotoForm');
+            const texto = document.getElementById('textoUploadForm');
+            const label = document.getElementById('labelUploadFoto');
+
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    icone.style.display = 'none';
+                    texto.innerText = input.files.length > 1
+                        ? `${input.files.length} fotos selecionadas ✅`
+                        : '1 foto selecionada ✅';
+                    texto.style.color = '#28a745';
+                    label.style.borderColor = '#28a745';
+                    label.style.background = '#f0fff4';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function resetarPreviewFoto() {
+            const preview = document.getElementById('imgPreviewForm');
+            const icone = document.getElementById('iconeFotoForm');
+            const texto = document.getElementById('textoUploadForm');
+            const label = document.getElementById('labelUploadFoto');
+            if (!preview) return;
+            preview.src = '';
+            preview.style.display = 'none';
+            icone.style.display = 'block';
+            texto.innerText = 'Toque para escolher foto(s)';
+            texto.style.color = '#555';
+            label.style.borderColor = '#ddd';
+            label.style.background = '#fafafa';
+        }
+    // Preview e validação de vídeo
+        function previewVideo(input) {
+            const previewVideo = document.getElementById('videoPreview');
+            const icone = document.getElementById('iconeVideoForm');
+            const texto = document.getElementById('textoUploadVideo');
+            const label = document.getElementById('labelUploadVideo');
+            const file = input.files[0];
+            if (!file) return;
+
+            // Valida extensão
+            const allowedTypes = ['video/mp4', 'video/quicktime', 'video/webm'];
+            if (!allowedTypes.includes(file.type)) {
+                mostrarToast("Formato de vídeo não suportado. Use MP4, MOV ou WebM.", "erro");
+                input.value = '';
+                resetarPreviewVideo();
+                return;
+            }
+
+            // Valida duração (máximo 30 segundos)
+            const video = document.createElement('video');
+            video.preload = 'metadata';
+            video.onloadedmetadata = function() {
+                window.URL.revokeObjectURL(video.src);
+                if (video.duration > 30) {
+                    mostrarToast("Vídeo muito longo! Máximo de 30 segundos.", "erro");
+                    input.value = '';
+                    resetarPreviewVideo();
+                } else {
+                    // Mostra preview
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        previewVideo.src = e.target.result;
+                        previewVideo.style.display = 'block';
+                        icone.style.display = 'none';
+                        texto.innerText = 'Vídeo selecionado ✅';
+                        texto.style.color = '#28a745';
+                        label.style.borderColor = '#28a745';
+                        label.style.background = '#f0fff4';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            video.onerror = function() {
+                mostrarToast("Erro ao carregar vídeo. Tente novamente.", "erro");
+                input.value = '';
+                resetarPreviewVideo();
+            };
+            video.src = URL.createObjectURL(file);
+        }
+
+        function resetarPreviewVideo() {
+            const previewVideo = document.getElementById('videoPreview');
+            const icone = document.getElementById('iconeVideoForm');
+            const texto = document.getElementById('textoUploadVideo');
+            const label = document.getElementById('labelUploadVideo');
+            if (!previewVideo) return;
+            previewVideo.src = '';
+            previewVideo.style.display = 'none';
+            icone.style.display = 'block';
+            texto.innerText = 'Toque para escolher vídeo (MP4, MOV, WebM)';
+            texto.style.color = '#555';
+            label.style.borderColor = '#ddd';
+            label.style.background = '#fafafa';
+        }
+        function addConfigRow(containerId, valorNome = '', valorPreco = '') {
+            const container = document.getElementById(containerId);
+            const div = document.createElement('div');
+            div.className = 'item-config';
+            div.innerHTML = `
+                <input type="text" placeholder="Nome" class="conf-nome" value="${valorNome}">
+                <input type="text" placeholder="Preço" class="conf-preco" style="width:80px" value="${valorPreco}">
+                <button onclick="this.parentElement.remove()" style="background:none; border:none; color:red; cursor:pointer;">&times;</button>
+            `;
+            container.appendChild(div);
+        }
+    
+    </script>
+    <div id="modalLimite" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:2000; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;">
+    <div style="background:white; padding:30px; border-radius:15px; max-width:400px; width:100%; text-align:center; position:relative; box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+        <button onclick="fecharModalLimite()" style="position:absolute; top:10px; right:15px; background:none; border:none; font-size:24px; cursor:pointer; color:#999;">&times;</button>
+        <i class="fa-solid fa-arrow-up-right-dots" style="font-size:50px; color:#ee4d2d; margin-bottom:15px;"></i>
+        <h3 style="margin:0 0 10px; color:#333;">Recursos disponíveis</h3>
+        <p style="font-size:14px; color:#666; line-height:1.5; margin-bottom:20px;">No momento, este perfil já está utilizando todos os recursos de visibilidade disponíveis para esta configuração de conta.<br><br>Para mais informações sobre recursos adicionais e disponibilidade da plataforma, fale com nossa equipe.</p>
+        <a href="javascript:void(0)" onclick="window.abrirSuporteDinamico()" style="display:block; margin-top:10px; padding:12px 25px; background:#25d366; color:white; text-decoration:none; border-radius:8px; font-weight:bold; width:100%; box-sizing:border-box;">
+    Falar com o suporte
+</a>
+    </div>
+</div>
+
+<script>
+    window.abrirModalLimite = () => document.getElementById('modalLimite').style.display = 'flex';
+    window.fecharModalLimite = () => document.getElementById('modalLimite').style.display = 'none';
+
+    window.mostrarSucessoPublicacao = () => {
+        // Remove se já houver um aberto
+        const antigo = document.getElementById('toastPublicacao');
+        if (antigo) antigo.remove();
+
+        const toast = document.createElement('div');
+        toast.id = 'toastPublicacao';
+        toast.style.cssText = `
+            position: fixed; bottom: 30px; left: 20px; right: 20px; transform: translateY(100px);
+            background: rgba(16,185,129,0.95); backdrop-filter: blur(12px); color: white;
+            padding: 14px 20px; border-radius: 60px; font-weight: 600; font-size: 15px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15); z-index: 9999;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            transition: transform 0.25s ease; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            text-align: center; width: auto; max-width: 90%; margin: 0 auto;
+        `;
+        toast.innerHTML = `<i class="fa-solid fa-circle-check" style="font-size:18px;"></i> Produto publicado com sucesso!`;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.animation = 'toastSlideDown 0.3s ease forwards';
+            setTimeout(() => toast.remove(), 300);
+        }, 2800);
+    };
+</script>
+
+</div>    
+</body>
+</html>

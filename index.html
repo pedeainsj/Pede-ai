@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pede Aí">
+<link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ee4d2d">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+<style>
+    html, body {
+        touch-action: manipulation;
+        -webkit-text-size-adjust: 100%;
+        -webkit-tap-highlight-color: transparent;
+    }
+    button, .filter-chip, .nav-item, .banner-box, .product-card {
+        touch-action: manipulation;
+        cursor: pointer;
+    }
+</style>
+    <title>Pede Aí | Super Vitrine</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="overlay.css">
+    <link rel="stylesheet" href="anuncios.css">
+    <script src="overlay.js"></script>
+
+    <style>
+        :root { 
+            --shopee-orange: #ee4d2d; 
+            --bg-gray: #f8f9fa; 
+            --food-red: #ea1d2c; 
+            --used-blue: #0077ff; 
+            --text-main: #222;
+            --text-muted: #666;
+            --card-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            --radius-main: 12px;
+            /* Cor de fundo neutra para o container da imagem */
+            --bg-image-container: #fcfcfc; 
+        }
+        
+        html {
+            background: var(--bg-gray);
+        }
+
+        body { 
+            margin: 0; 
+            background: var(--bg-gray); 
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif; 
+            padding-bottom: calc(env(safe-area-inset-bottom) + 90px); 
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        header { 
+    background: var(--shopee-orange); 
+    padding: 12px 16px; 
+    position: sticky; 
+    top: 0; 
+    z-index: 1000; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    isolation: auto;
+}
+        .header-top { display: flex; justify-content: space-between; align-items: center; color: white; max-width: 1200px; margin: 0 auto; }
+        
+        .logo-container { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            font-size: 22px; 
+            font-weight: 900; 
+            letter-spacing: -1px;
+        }
+        .logo-container i { font-size: 18px; opacity: 0.9; }
+
+        .header-top a { font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 20px; color: white; text-decoration: none; }
+        
+        .search-box { 
+            background: rgba(255,255,255,1); 
+            display: flex; 
+            align-items: center; 
+            padding: 10px 14px; 
+            border-radius: 8px; 
+            max-width: 1200px; 
+            margin: 12px auto 4px;
+        }
+        .search-box input { border: none; outline: none; width: 100%; margin-left: 10px; font-size: 14px; color: #333; }
+
+        .featured-strip { 
+            background: var(--shopee-orange); 
+            padding: 8px 0 16px; 
+            overflow: hidden; 
+            position: relative;
+            max-height: 140px; 
+        }
+        
+        .carousel-track { 
+            display: flex; 
+            gap: 12px; 
+            padding: 0 16px; 
+            overflow-x: auto; 
+            scrollbar-width: none; 
+            -webkit-overflow-scrolling: touch; 
+        }
+        .carousel-track::-webkit-scrollbar { display: none; }
+        
+        .banner-box { 
+            width: 110px; 
+            height: 110px; 
+            min-width: 110px;
+            background: transparent; 
+            border-radius: 12px; 
+            overflow: hidden; 
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15); 
+            position: relative;
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+        .banner-box img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: fill; /* Força a imagem gerada pelo Cloudinary a ocupar o box todo */
+        }
+        
+        .banner-overlay {
+            position: absolute; 
+            bottom: 6px; 
+            right: 6px;
+        }
+        .banner-price { 
+            font-size: 10px; 
+            font-weight: 700; 
+            background: rgba(0, 0, 0, 0.7); 
+            color: #fff; 
+            padding: 3px 7px;
+            border-radius: 4px;
+        }
+
+        .quick-filters { 
+            background: white; 
+            padding: 14px 0; 
+            border-bottom: 1px solid #f0f0f0; 
+            overflow-x: auto; 
+            white-space: nowrap; 
+            scrollbar-width: none;
+            position: sticky;
+            top: 104px; 
+            z-index: 900;
+        }
+        .quick-filters::-webkit-scrollbar { display: none; }
+
+        .filter-chip { 
+            display: inline-block; padding: 8px 18px; background: #f2f2f2; 
+            border-radius: 20px; font-size: 13px; font-weight: 500; color: #555; 
+            margin-left: 10px; cursor: pointer;
+        }
+        .filter-chip.active { background: var(--shopee-orange); color: white; }
+
+        .container { max-width: 1200px; margin: 16px auto; padding: 0 16px; }
+        .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; contain: layout; }
+
+        .skeleton-card { background: white; border-radius: var(--radius-main); overflow: hidden; box-shadow: var(--card-shadow); border: 1px solid #f0f0f0; }
+        .skeleton-img { width: 100%; height: 210px; background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 37%, #f0f0f0 63%); background-size: 400% 100%; animation: skeletonShine 1.4s ease infinite; }
+        .skeleton-line { height: 12px; margin: 12px; border-radius: 6px; background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 37%, #f0f0f0 63%); background-size: 400% 100%; animation: skeletonShine 1.4s ease infinite; }
+        .skeleton-line.short { width: 50%; }
+        @keyframes skeletonShine { 0% { background-position: 100% 50%; } 100% { background-position: 0 50%; } }
+        .skeleton-banner { width: 110px; height: 110px; min-width: 110px; border-radius: 12px; flex-shrink: 0; background: linear-gradient(90deg, rgba(255,255,255,0.25) 25%, rgba(255,255,255,0.4) 37%, rgba(255,255,255,0.25) 63%); background-size: 400% 100%; animation: skeletonShine 1.4s ease infinite; }
+        .skeleton-chip { display: inline-block; width: 78px; height: 32px; border-radius: 20px; margin-left: 10px; background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 37%, #f0f0f0 63%); background-size: 400% 100%; animation: skeletonShine 1.4s ease infinite; vertical-align: middle; }
+
+        .product-card { 
+            background: white; border-radius: var(--radius-main); overflow: hidden; 
+            box-shadow: var(--card-shadow); border: 1px solid #f0f0f0; 
+            display: flex; flex-direction: column;
+        }
+
+        /* AJUSTE CIRÚRGICO: Container da Imagem */
+        .img-box { 
+            width: 100%; 
+            height: 210px; /* Aumentado levemente para melhor verticalidade */
+            background-color: var(--bg-image-container); 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-bottom: 1px solid #f9f9f9;
+            position: relative;
+        }
+        .img-box video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+    .gourmet-img-box video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+              .img-box img { 
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: 0.2s ease;
+}
+
+        .card-body { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; }
+        .p-name { font-size: 13px; font-weight: 500; color: #444; height: 36px; line-height: 1.4; margin-bottom: 6px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .p-price { color: var(--shopee-orange); font-size: 18px; font-weight: 800; margin-top: auto; }
+        
+        .btn-add-main {
+            width: 100%; background: #fff; border: 1.5px solid #eee; padding: 10px; 
+            border-radius: 8px; margin-top: 10px; font-weight: 700; color: #444; 
+            font-size: 11px; text-transform: uppercase;
+        }
+
+        .gourmet-card {
+    background: white;
+    border-radius: 16px;
+    overflow: visible; /* <<< AQUI É O PONTO PRINCIPAL */
+    box-shadow: var(--card-shadow);
+    border: 1px solid #f0f0f0;
+    position: relative;
+}
+        
+        /* AJUSTE CIRÚRGICO: Gourmet Img Box */
+        .gourmet-img-box { 
+            width: 100%; 
+            height: 190px; 
+            background-color: var(--bg-image-container);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            overflow: hidden;
+            position: relative;
+        }
+        .gourmet-img-box video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        /* Estilo removido para permitir controle inline via JS */
+    
+        .gourmet-body { padding: 14px; background: white; }
+        .gourmet-name { font-size: 15px; font-weight: 700; color: #222; margin-bottom: 4px; }
+        .gourmet-price { color: var(--food-red); font-size: 17px; font-weight: 800; }
+
+        .bottom-nav { 
+            position: fixed; bottom: 0; left: 0; right: 0; 
+            background: rgba(255, 255, 255, 0.94); display: flex; justify-content: space-around; 
+            padding: 8px 0 calc(env(safe-area-inset-bottom) + 8px); 
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.06); border-top: 1px solid #f0f0f0;
+            z-index: 2000;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        }
+        .nav-item { color: #888; border: none; background: none; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; flex: 1; }
+        .nav-item i { font-size: 20px; }
+        .nav-item.active { color: var(--shopee-orange); }
+
+        body.mode-restaurants header, body.mode-restaurants .featured-strip { background: var(--food-red); }
+        body.mode-restaurants .nav-item.active { color: var(--food-red); }
+        body.mode-restaurants .filter-chip.active { background: var(--food-red); }
+        
+        body.mode-classifieds header, body.mode-classifieds .featured-strip { background: var(--used-blue); }
+        body.mode-classifieds .nav-item.active { color: var(--used-blue); }
+
+        /* Estilo do Menu de Denúncia */
+        .report-menu-container { position: relative; display: flex; justify-content: flex-end; margin-top: 6px; z-index: 10; }
+        .btn-report-trigger { 
+    background: rgba(255,255,255,0.8); border: none; width: 44px; height: 44px; 
+    border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+    color: #666; font-size: 16px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .report-dropdown { 
+            display: none; position: absolute; right: 0; top: 32px; background: white; 
+            border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); border: 1px solid #eee;
+            min-width: 140px; overflow: hidden;
+        }
+        .report-dropdown.show { display: block; }
+        .report-item { 
+            padding: 10px 14px; font-size: 12px; color: #333; display: flex; 
+            align-items: center; gap: 8px; font-weight: 500;
+        }
+        .report-item:active { background: #f5f5f5; }
+        .report-item i { color: #888; font-size: 11px; }
+        
+        .product-card, .gourmet-card { position: relative; }
+    </style>
+    <style>
+    /* Elimina flash branco do fundo do html durante troca de conteúdo */
+    html {
+        background: #f8f9fa;  /* mesmo valor da variável --bg-gray */
+    }
+</style>
+</head>
+<body data-index-page="true" class="mode-products">
+    <script>
+        (function() {
+            // Controle de splash: exibe apenas uma vez por sessão.
+            // Usa classe no <body>, pois a div da splash ainda não existe
+            // no DOM neste ponto do parsing — getElementById aqui sempre falhava.
+            if (sessionStorage.getItem('splashExibido') === 'true') {
+                document.body.classList.add('skip-splash');
+            }
+
+            // Watchdog: se em 10s o grid ainda só tiver o skeleton inicial
+            // (index.js falhou ao executar por completo), mostra erro com recarregar
+            // em vez de deixar a tela parecendo quebrada para sempre.
+            setTimeout(function() {
+                var skel = document.querySelector('#grid-produtos [data-skeleton]');
+                if (skel) {
+                    var grid = document.getElementById('grid-produtos');
+                    if (grid) {
+                        grid.innerHTML = '<div style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 64px 24px; text-align: center; min-height: 300px;">' +
+                            '<p style="font-size: 18px; font-weight: 700; color: #1c1c1e; margin: 0 0 8px 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">Não foi possível carregar</p>' +
+                            '<p style="font-size: 14px; color: #8e8e93; margin: 0 0 28px 0; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">Toque para tentar novamente</p>' +
+                            '<button onclick="window.location.reload()" style="background: #0077ff; color: #fff; border: none; border-radius: 14px; padding: 14px 32px; font-size: 15px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, sans-serif;">Recarregar</button>' +
+                            '</div>';
+                    }
+                    var splash = document.getElementById('pedeai-splash');
+                    if (splash) splash.remove();
+                }
+            }, 10000);
+        })();
+    </script>
+    <div id="pedeai-splash" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ee4d2d; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; transition: opacity 0.4s ease-out, visibility 0.4s;">
+        <div style="text-align: center;">
+            <div style="font-size: 50px; color: white; margin-bottom: 20px; animation: pulse 1.5s infinite ease-in-out;">
+                <i class="fas fa-bag-shopping"></i>
+            </div>
+            <div style="color: white; font-size: 24px; font-weight: 900; letter-spacing: -1px; font-family: 'Inter', sans-serif;">
+                Pede Aí
+            </div>
+            <div class="splash-loader" style="margin-top: 30px; display: flex; gap: 8px; justify-content: center;">
+                <span class="dot" style="width: 8px; height: 8px; background: white; border-radius: 50%; animation: splashDots 1.4s infinite both;"></span>
+                <span class="dot" style="width: 8px; height: 8px; background: white; border-radius: 50%; animation: splashDots 1.4s infinite both 0.2s;"></span>
+                <span class="dot" style="width: 8px; height: 8px; background: white; border-radius: 50%; animation: splashDots 1.4s infinite both 0.4s;"></span>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.9; }
+        }
+        @keyframes splashDots {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1.0); }
+        }
+        .splash-hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        body.skip-splash #pedeai-splash { display: none !important; }
+    </style>
+
+    <header id="dynamicHeader" style="padding-top: calc(env(safe-area-inset-top) + 12px);">
+        <div class="header-top">
+            <span id="main-logo" class="logo-container">
+                <i class="fas fa-bag-shopping"></i>
+                Pede Aí
+            </span>
+            <a href="login.html">QUERO VENDER</a>
+        </div>
+        <div class="search-box">
+            <i class="fas fa-search" style="color: #bbb;"></i>
+            <input type="text" id="inputBusca" placeholder="Busque produtos ou pratos..." enterkeyhint="search" style="font-size: 16px; -webkit-appearance: none;">
+        </div>
+    </header>
+
+    <div class="featured-strip" id="featuredStrip"
+     style="contain: layout paint;">
+        <div class="carousel-track" id="carouselTrack" data-skeleton="true" style="-webkit-overflow-scrolling: touch;">
+            <div class="skeleton-banner"></div>
+            <div class="skeleton-banner"></div>
+            <div class="skeleton-banner"></div>
+        </div>
+    </div>
+
+    <div class="quick-filters" id="chipContainer" data-skeleton="true" style="top: 104px; -webkit-overflow-scrolling: touch; transform: translateZ(0); will-change: transform;">
+        <span class="skeleton-chip"></span><span class="skeleton-chip"></span><span class="skeleton-chip"></span><span class="skeleton-chip"></span>
+    </div>
+
+    <div class="container" id="products-container">
+        <div id="grid-produtos" class="grid-container" data-skeleton="true">
+            <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        </div>
+    </div>
+
+    <!-- Microapp Anúncios: fora do fluxo de products/gourmet, isolado do sticky -->
+    <div id="classifieds-root" style="display:none;"></div>
+
+    <nav class="bottom-nav">
+    <button id="nav-products" class="nav-item active" onclick="setAppMode('products', this)">
+        <i class="fas fa-shopping-bag"></i><span>Produtos</span>
+    </button>
+    <button id="nav-restaurants" class="nav-item" onclick="setAppMode('restaurants', this)">
+        <i class="fas fa-utensils"></i><span>Gourmet</span>
+    </button>
+    <button id="nav-classifieds" class="nav-item" onclick="setAppMode('classifieds', this)">
+        <i class="fas fa-bullhorn"></i><span>Anúncios</span>
+    </button>
+    <button id="nav-cart" class="nav-item" onclick="window.abrirModalCarrinho()">
+    <i class="fas fa-shopping-cart"></i>
+    <span>Carrinho</span>
+    <span id="cart-badge-nav" class="cart-badge-nav" style="display: none;">0</span>
+</button>
+</nav>
+
+<!-- CSS para esconder o botão flutuante antigo e estilizar o badge -->
+<style>
+    /* Esconde qualquer botão flutuante de carrinho existente */
+    .cart-floating, #floating-cart, .cart-float, [data-cart-float], .carrinho-flutuante, #cartFloat {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+
+    .cart-badge-nav {
+    position: absolute;
+    top: 0px;
+    right: 12px;
+    background-color: #ff3b30;
+    color: white;
+    border-radius: 20px;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    min-width: 18px;
+    text-align: center;
+    line-height: 1.3;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+    .bottom-nav .nav-item {
+        position: relative;
+    }
+
+    /* Oculta o carrinho flutuante APENAS no index */
+    #carrinho-flutuante {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+</style>
+
+<!-- Mantenha o install-container se ele existir fora do nav -->
+<div id="install-container" style="display:none; padding: 10px; background: #fff; border-top: 1px solid #eee; position: fixed; bottom: 70px; width: 100%; z-index: 1900; text-align: center;">
+    <button id="btnInstall" style="background: var(--shopee-orange); color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; width: 90%;">
+        <i class="fas fa-download"></i> INSTALAR APLICATIVO
+    </button>
+</div>
+
+    <script type="module" src="./index.js"></script>
+    <script type="module" src="./carrinho.js"></script>
+    <script type="module" src="./classifieds-app.js"></script>
+    <script src="./overlay.js"></script>
+
+    <script>
+        function setAppMode(mode, element) {
+            if (element.classList.contains('active')) return;
+
+            if (window.IosOverlayManager) {
+                if (mode === 'classifieds') {
+                    window.IosOverlayManager.show('anuncios');
+                } else {
+                    window.IosOverlayManager.show(mode === 'restaurants' ? 'gourmet' : 'produtos');
+                }
+            }
+
+            // Status bar branca enquanto o overlay cobre a tela — elimina a faixa colorida do topo
+            const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+            if (themeColorMeta) {
+                themeColorMeta.setAttribute('content', '#ffffff');
+            }
+
+            // Overlay cobre a tela no Frame N+1 — DOM só muda no Frame N+2
+    requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+element.classList.add('active');
+document.body.className = 'mode-' + mode;
+const modoAnterior = sessionStorage.getItem('pedeai_mode');
+sessionStorage.setItem('pedeai_mode', mode);
+// Só invalida o cache DOM ao trocar entre products/restaurants.
+// Ao voltar de classifieds, o cache ainda é válido.
+if (mode !== 'classifieds' && modoAnterior !== 'classifieds') {
+    sessionStorage.removeItem('pedeai_dom_cache');
+}
+
+const featuredStrip   = document.getElementById('featuredStrip');
+const chipContainer   = document.getElementById('chipContainer');
+const gridProdutos    = document.getElementById('products-container');
+const classifiedsRoot = document.getElementById('classifieds-root');
+const navVender       = document.getElementById('nav-vender');
+
+const mainHeader = document.getElementById('dynamicHeader');
+
+if (mode === 'classifieds') {
+    if (mainHeader)      mainHeader.style.display      = 'none';
+    if (featuredStrip)   featuredStrip.style.display   = 'none';
+    if (chipContainer)   chipContainer.style.display   = 'none';
+    if (gridProdutos)    gridProdutos.style.display    = 'none';
+    if (classifiedsRoot) classifiedsRoot.style.display = 'block';
+    if (navVender)       navVender.style.display       = 'flex';
+} else {
+    if (mainHeader)      mainHeader.style.display      = 'block';
+    if (featuredStrip)   featuredStrip.style.display   = 'block';
+    if (chipContainer)   chipContainer.style.display   = 'block';
+    if (gridProdutos)    gridProdutos.style.display    = 'block';
+    if (classifiedsRoot) classifiedsRoot.style.display = 'none';
+    if (navVender)       navVender.style.display       = 'none';
+}
+
+// Dispara o evento de mudança de modo (que recria carrossel, filtros e produtos)
+window.dispatchEvent(new CustomEvent('changeMode', { detail: mode }));
+
+// Mantém o overlay de transição visível por tempo suficiente para a reconstrução do conteúdo
+setTimeout(() => {
+    if (window.IosOverlayManager) window.IosOverlayManager.hideAll();
+    // Restaura a cor do status bar para o novo modo, simultâneo ao overlay sumir
+    if (themeColorMeta) {
+        let finalColor = '#ee4d2d';
+        if (mode === 'restaurants') finalColor = '#ea1d2c';
+        if (mode === 'classifieds') finalColor = '#0077ff';
+        themeColorMeta.setAttribute('content', finalColor);
+    }
+}, 300);
+        });
+    });
+        }
+
+        (function() {
+            const savedMode = sessionStorage.getItem('pedeai_mode');
+            if (savedMode) {
+                document.body.className = 'mode-' + savedMode;
+            }
+
+            // FUNÇÃO PARA REMOVER O SPLASH IMEDIATAMENTE (sem animação)
+            function removerSplashInstantaneo() {
+                const splash = document.getElementById('pedeai-splash');
+                if (splash) {
+                    splash.style.display = 'none';
+                    splash.remove();
+                }
+            }
+
+            // Se o splash já foi exibido nesta sessão, remove logo no carregamento normal
+            if (sessionStorage.getItem('splashExibido') === 'true') {
+                removerSplashInstantaneo();
+            }
+
+            // Listener para o bfcache (Safari/iPhone) e navegação normal (voltar de criaranuncios, vitrine, etc.)
+            window.addEventListener('pageshow', (event) => {
+                // Dispara tanto no bfcache quanto na navegação normal de volta
+                if (event.persisted || window.performance.navigation.type === 2) {
+                    removerSplashInstantaneo();
+
+                    // ── Restaura o estado visual de acordo com o modo salvo ──────
+                    const modoRestaurado = sessionStorage.getItem('pedeai_mode') || 'products';
+
+                    const mainHeader      = document.getElementById('dynamicHeader');
+                    const featuredStrip   = document.getElementById('featuredStrip');
+                    const chipContainer   = document.getElementById('chipContainer');
+                    const gridProdutos    = document.getElementById('products-container');
+                    const classifiedsRoot = document.getElementById('classifieds-root');
+                    const navVender       = document.getElementById('nav-vender');
+
+                    if (modoRestaurado === 'classifieds') {
+                        // Garante que o módulo de anúncios esteja visível e o resto oculto
+                        if (mainHeader)      mainHeader.style.display      = 'none';
+                        if (featuredStrip)   featuredStrip.style.display   = 'none';
+                        if (chipContainer)   chipContainer.style.display   = 'none';
+                        if (gridProdutos)    gridProdutos.style.display    = 'none';
+                        if (classifiedsRoot) classifiedsRoot.style.display = 'block';
+                        if (navVender)       navVender.style.display       = 'flex';
+                    } else {
+                        // Garante que products/gourmet estejam visíveis e classifieds oculto
+                        if (mainHeader)      mainHeader.style.display      = 'block';
+                        if (featuredStrip)   featuredStrip.style.display   = 'block';
+                        if (chipContainer)   chipContainer.style.display   = 'block';
+                        if (gridProdutos)    gridProdutos.style.display    = 'block';
+                        if (classifiedsRoot) classifiedsRoot.style.display = 'none';
+                        if (navVender)       navVender.style.display       = 'none';
+
+                        // Restaura o grid do DOM cache se disponível (bfcache path)
+                        if (event.persisted || window.performance.navigation.type === 2) {
+                            const domCache = sessionStorage.getItem('pedeai_dom_cache');
+                            const grid = document.getElementById('grid-produtos');
+                            if (domCache && grid) {
+                                grid.innerHTML = domCache;
+                                // Reaplica src transformado em todos os vídeos restaurados do cache
+                                grid.querySelectorAll('video').forEach(function(video) {
+                                    const rawSrc = video.getAttribute('src') || video.getAttribute('data-src');
+                                    if (rawSrc && rawSrc.includes('cloudinary.com/video/upload')) {
+                                        let transformedSrc = rawSrc;
+                                        if (!rawSrc.includes('f_auto') && !rawSrc.includes('q_auto') && !rawSrc.includes('w_720')) {
+                                            transformedSrc = rawSrc.replace('/video/upload/', '/video/upload/w_720,c_limit,f_auto,q_auto:eco,vc_auto/');
+                                        }
+                                        video.setAttribute('src', transformedSrc);
+                                    }
+                                });
+                                const carouselCache = sessionStorage.getItem('pedeai_carousel_cache');
+                                const track = document.getElementById('carouselTrack');
+                                if (carouselCache && track) track.innerHTML = carouselCache;
+                                const scrollPos = sessionStorage.getItem('pedeai_scroll');
+                                if (scrollPos) window.scrollTo(0, parseInt(scrollPos));
+                            }
+                        }
+                    }
+
+                    // Sincroniza o botão ativo da nav com o modo salvo
+                    document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+                    const navAtivo = document.getElementById(`nav-${modoRestaurado}`);
+                    if (navAtivo) navAtivo.classList.add('active');
+                    document.body.className = 'mode-' + modoRestaurado;
+
+                    // Atualiza a cor da barra de status (meta tag theme-color) imediatamente
+                    const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+                    if (themeColorMeta) {
+                        let newColor = '#ee4d2d';
+                        if (modoRestaurado === 'restaurants') newColor = '#ea1d2c';
+                        if (modoRestaurado === 'classifieds') newColor = '#0077ff';
+                        themeColorMeta.setAttribute('content', newColor);
+                    }
+
+                    window.IosOverlayManager?.hideAll();
+                }
+            });
+        })();
+    </script>
+    <div id="filter-overlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:#ffffff; align-items:center; justify-content:center; z-index:999999;">
+    <div style="display:flex; gap:10px; align-items:center;">
+        <span style="width:10px;height:10px;border-radius:50%;background:#ee4d2d;display:inline-block;animation:fd 0.8s ease-in-out infinite;"></span>
+        <span style="width:10px;height:10px;border-radius:50%;background:#ee4d2d;display:inline-block;animation:fd 0.8s ease-in-out 0.25s infinite;"></span>
+        <span style="width:10px;height:10px;border-radius:50%;background:#ee4d2d;display:inline-block;animation:fd 0.8s ease-in-out 0.5s infinite;"></span>
+    </div>
+</div>
+<style>
+@keyframes fd { 0%,100%{opacity:0.15;transform:scale(0.75)} 50%{opacity:1;transform:scale(1.25)} }
+</style>
+<script>
+let deferredPrompt;
+const installContainer = document.getElementById('install-container');
+const btnInstall = document.getElementById('btnInstall');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installContainer.style.display = 'block';
+});
+
+btnInstall.addEventListener('click', () => {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        installContainer.style.display = 'none';
+      }
+      deferredPrompt = null;
+    });
+  }
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(reg => console.log('SW registrado:', reg.scope))
+      .catch(err => console.error('Erro no SW:', err));
+  });
+
+  // Sem isto, clients.claim() no service-worker.js assume o controle das
+  // próximas requisições, mas o index.js que já está executando na página
+  // aberta continua sendo o código antigo até uma navegação real acontecer.
+  // Recarrega uma única vez assim que o novo SW assume o controle.
+  let swJaRecarregou = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (swJaRecarregou) return;
+    swJaRecarregou = true;
+    window.location.reload();
+  });
+}
+</script>
+</body>
+</html>

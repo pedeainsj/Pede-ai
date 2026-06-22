@@ -212,8 +212,13 @@ async function inicializar() {
 
         if (todosProdutos.length === 0) {
             const timeoutFirestore = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore timeout ao reabrir o app')), ms));
-            const snapProdutos = await Promise.race([getDocs(collection(db, "produtos")), timeoutFirestore(8000)]);
-            const snapUsuarios = await Promise.race([getDocs(collection(db, "usuarios")), timeoutFirestore(8000)]);
+            const [snapProdutos, snapUsuarios] = await Promise.race([
+                Promise.all([
+                    getDocs(collection(db, "produtos")),
+                    getDocs(collection(db, "usuarios"))
+                ]),
+                timeoutFirestore(8000)
+            ]);
             
             const dadosLojistas = {};
             snapUsuarios.forEach(u => {
@@ -1051,6 +1056,11 @@ window.__tentarNovamente = function() {
     if (inicializacaoEmAndamento) return;
     const btn = document.querySelector('[data-offline-state] button');
     if (btn) btn.textContent = 'Carregando...';
+    // Restaura skeleton imediatamente — feedback visual confirma que o retry está em andamento
+    const gridRetry = document.getElementById('grid-produtos');
+    if (gridRetry) {
+        gridRetry.innerHTML = '<div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>';
+    }
     // Online: reconstrói sem reload
     inicializar();
 };

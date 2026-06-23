@@ -8,6 +8,7 @@ let filtroTexto = '';
 let animationId = null;
 let isReturning = false;
 let inicializacaoEmAndamento = false; // mutex: evita inicializar() concorrente (causa raiz da duplicação)
+let inicializacaoPromiseAtual = null; // guarda a Promise da inicialização em andamento, para que uma chamada concorrente (ex: listener 'online' x clique) AGUARDE o mesmo resultado em vez de ser descartada em silêncio
 
 // Cache para armazenar a posição do scroll de cada categoria
 const scrollModesCache = {
@@ -169,11 +170,22 @@ function renderizacaoFoiConcluida() {
     return gridOk && chipsOk;
 }
 
-async function inicializar() {
-    if (inicializacaoEmAndamento) {
-        console.warn('[init] inicializar() já em andamento — chamada concorrente ignorada (evita duplicação de produtos)');
-        return;
+function inicializar() {
+    if (inicializacaoPromiseAtual) {
+        // Já existe uma inicialização real em andamento (ex: o listener 'online' disparou
+        // inicializar() no exato momento da reconexão, antes do clique). Antes, esta chamada
+        // concorrente era só descartada (return vazio) e quem chamou nunca sabia o resultado —
+        // por isso o clique "não fazia nada" e era preciso repetir várias vezes.
+        console.warn('[init] inicializar() já em andamento — reaproveitando a mesma Promise em vez de ignorar a chamada');
+        return inicializacaoPromiseAtual;
     }
+    inicializacaoPromiseAtual = inicializarInterno().finally(() => {
+        inicializacaoPromiseAtual = null;
+    });
+    return inicializacaoPromiseAtual;
+}
+
+async function inicializarInterno() {
     inicializacaoEmAndamento = true;
     setEstadoInit(ESTADOS_INIT.INICIANDO);
 
@@ -1042,7 +1054,7 @@ window.addEventListener('online', () => {
 
 // Tentar novamente: verifica conexão antes de agir
 // Usa inicializar() em vez de reload() para reconstruir corretamente no iPhone
-window.__tentarNovamente = function() {
+window.__tentarNovamente = async function() {
     if (!navigator.onLine) {
         // Ainda offline: pisca o botão para dar feedback
         const btn = document.querySelector('[data-offline-state] button');
@@ -1052,17 +1064,34 @@ window.__tentarNovamente = function() {
         }
         return;
     }
-    // Bloqueia clique duplo enquanto uma inicialização já está rodando
-    if (inicializacaoEmAndamento) return;
     const btn = document.querySelector('[data-offline-state] button');
     if (btn) btn.textContent = 'Carregando...';
+
+    // Já existe uma inicialização real em andamento (ex: o listener 'online' disparou
+    // inicializar() no exato momento da reconexão, antes deste clique). Antes, esta linha
+    // era "if (inicializacaoEmAndamento) return" — o clique era descartado em silêncio.
+    // Agora aguardamos a MESMA Promise em andamento e deixamos este clique ver o resultado real.
+    if (inicializacaoPromiseAtual) {
+        await inicializacaoPromiseAtual;
+        return;
+    }
+
+    // Reproduz o estado de cold start: zera todo estado intermediário para que
+    // inicializar() execute o fluxo completo (Firestore → filtros → produtos),
+    // sem atalhos de isReturning ou todosProdutos parcialmente populado que
+    // mascaram a falha e exigem múltiplos cliques para recuperar.
+    todosProdutos = [];
+    sessionStorage.removeItem('todosProdutosCache');
+    sessionStorage.removeItem('pedeai_dom_cache');
+    sessionStorage.removeItem('pedeai_carousel_cache');
+
     // Restaura skeleton imediatamente — feedback visual confirma que o retry está em andamento
     const gridRetry = document.getElementById('grid-produtos');
     if (gridRetry) {
         gridRetry.innerHTML = '<div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>';
     }
-    // Online: reconstrói sem reload
-    inicializar();
+    // Online: reconstrói sem reload — fluxo idêntico ao cold start
+    await inicializar();
 };
 
 function garantirRenderizacaoValida() {

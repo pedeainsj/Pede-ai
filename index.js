@@ -15,8 +15,9 @@ let filtroChip = '';
 let filtroTexto = '';
 let animationId = null;
 let isReturning = false;
-let inicializacaoEmAndamento = false; // mutex: evita inicializar() concorrente (causa raiz da duplicação)
-let inicializacaoPromiseAtual = null; // guarda a Promise da inicialização em andamento, para que uma chamada concorrente (ex: listener 'online' x clique) AGUARDE o mesmo resultado em vez de ser descartada em silêncio
+let inicializacaoEmAndamento = false;
+let inicializacaoPromiseAtual = null;
+let currentInitSequence = 0; // Controle de concorrência: rastreia a execução mais recente
 
 // Timeout seguro para qualquer Promise
 function withTimeout(promise, ms, message = 'Operação excedeu o tempo limite') {
@@ -40,7 +41,6 @@ function otimizarURL(url, width = 400) {
     const key = `${url}|${width}`;
     if (urlCache.has(key)) return urlCache.get(key);
     
-    // Só aplica transformação se a URL já não tiver parâmetros otimizados
     if (url.includes('f_auto') && url.includes('q_auto')) {
         urlCache.set(key, url);
         return url;
@@ -55,34 +55,32 @@ function otimizarVideoURL(url) {
     if (!url || typeof url !== 'string') return url;
     if (!url.includes('res.cloudinary.com')) return url;
     if (!url.includes('/video/upload/')) return url;
-    // Já tem transformação aplicada — não duplicar
     if (url.includes('q_auto') || url.includes('f_auto')) return url;
     return url.replace('/video/upload/', '/video/upload/f_auto,q_auto:low,vc_auto/');
 }
 
-// Função auxiliar para gerar HTML de mídia (imagem ou vídeo) no card
 function renderizarMediaCard(produto, modo) {
     if (produto.videoUrl && produto.videoUrl.trim() !== "") {
-    const videoId = `vid_${produto.id}`;
-    const posterUrl = produto.videoUrl && produto.videoUrl.includes('res.cloudinary.com') ? produto.videoUrl.replace('/video/upload/', '/video/upload/so_0/').replace(/\.(mp4|mov|webm)$/i, '.jpg') : '';
-    return `
-        <div style="position: relative; width: 100%; height: 100%; background: ${posterUrl ? `url('${posterUrl}') center/cover no-repeat` : '#1a1a1a'};">
-            <video 
-    id="${videoId}"
-    data-src="${otimizarVideoURL(produto.videoUrl)}"
-    poster="${posterUrl}"
-    preload="none"
-    muted
-    playsinline
-    style="width: 100%; height: 100%; object-fit: cover; will-change: transform; opacity: 0; transition: opacity 0.2s ease;"
-></video>
-            <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); border-radius: 20px; padding: 4px 8px; display: flex; align-items: center; gap: 4px; backdrop-filter: blur(4px);">
-                <i class="fas fa-play" style="font-size: 10px; color: white;"></i>
-                <span style="font-size: 9px; color: white;">Vídeo</span>
+        const videoId = `vid_${produto.id}`;
+        const posterUrl = produto.videoUrl && produto.videoUrl.includes('res.cloudinary.com') ? produto.videoUrl.replace('/video/upload/', '/video/upload/so_0/').replace(/\.(mp4|mov|webm)$/i, '.jpg') : '';
+        return `
+            <div style="position: relative; width: 100%; height: 100%; background: ${posterUrl ? `url('${posterUrl}') center/cover no-repeat` : '#1a1a1a'};">
+                <video 
+                    id="${videoId}"
+                    data-src="${otimizarVideoURL(produto.videoUrl)}"
+                    poster="${posterUrl}"
+                    preload="none"
+                    muted
+                    playsinline
+                    style="width: 100%; height: 100%; object-fit: cover; will-change: transform; opacity: 0; transition: opacity 0.2s ease;"
+                ></video>
+                <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); border-radius: 20px; padding: 4px 8px; display: flex; align-items: center; gap: 4px; backdrop-filter: blur(4px);">
+                    <i class="fas fa-play" style="font-size: 10px; color: white;"></i>
+                    <span style="font-size: 9px; color: white;">Vídeo</span>
+                </div>
             </div>
-        </div>
-    `;
-   } else {
+        `;
+    } else {
         const imgUrl = produto.foto || (produto.fotos && produto.fotos[0]) || "https://via.placeholder.com/300";
         const imgOptimized = otimizarURL(imgUrl, 400);
         return `<img src="${imgOptimized}" loading="lazy" style="width: 100%; height: 230px; background: #fcfcfc; padding: 4px; border-radius: 14px 14px 0 0; display: block; transition: 0.2s; object-fit: cover;">`;
@@ -172,24 +170,19 @@ function setEstadoInit(novoEstado) {
     console.log(`[init] ${novoEstado}`);
 }
 
-// Verifica de fato, no DOM, que cada seção saiu do skeleton e tem conteúdo real.
-// Esta é a ÚNICA condição que autoriza a transição para RENDERIZACAO_CONCLUIDA.
 function renderizacaoFoiConcluida() {
     const grid = document.getElementById('grid-produtos');
     const chips = document.getElementById('chipContainer');
-
     const gridOk = !!grid && grid.children.length > 0 && !grid.querySelector('[data-skeleton]');
     const chipsOk = !!chips && chips.children.length > 0;
-
-    // O carrossel é opcional (pode legitimamente ficar vazio se não há produtos turbo),
-    // então não bloqueia a conclusão — inicializarArialProdutos() já trata esse caso.
     return gridOk && chipsOk;
 }
 
 function inicializar(opts = {}) {
     const { forceReset = false } = opts;
+    
     if (forceReset) {
-        // Reset completo do estado
+        currentInitSequence++; // Incrementa para ignorar retornos de chamadas antigas
         todosProdutos = [];
         sessionStorage.removeItem('todosProdutosCache');
         sessionStorage.removeItem('pedeai_dom_cache');
@@ -197,7 +190,7 @@ function inicializar(opts = {}) {
         sessionStorage.removeItem('pedeai_scroll');
         urlCache.clear();
         for (const key in ordemFixaCache) delete ordemFixaCache[key];
-        // Limpa DOM para skeleton
+        
         const grid = document.getElementById('grid-produtos');
         if (grid) {
             grid.innerHTML = `
@@ -211,30 +204,37 @@ function inicializar(opts = {}) {
         if (track) track.innerHTML = '';
         const chips = document.getElementById('chipContainer');
         if (chips) chips.innerHTML = '';
-    }
-
-    if (inicializacaoPromiseAtual && !opcoes?.forceReset) {
-    return inicializacaoPromiseAtual;
-}
-    inicializacaoPromiseAtual = (async () => {
-    try {
-        return await inicializarInterno();
-    } finally {
+        
         inicializacaoPromiseAtual = null;
     }
-})();
 
-return inicializacaoPromiseAtual;
+    if (inicializacaoPromiseAtual) {
+        return inicializacaoPromiseAtual;
+    }
+
+    const sequenceId = currentInitSequence;
+
+    inicializacaoPromiseAtual = (async () => {
+        try {
+            return await inicializarInterno(sequenceId);
+        } finally {
+            if (currentInitSequence === sequenceId) {
+                inicializacaoPromiseAtual = null;
+            }
+        }
+    })();
+
+    return inicializacaoPromiseAtual;
 }
 
-async function inicializarInterno() {
-  // Timeout global de segurança: 20 segundos
+async function inicializarInterno(sequenceId) {
   return withTimeout(
     (async () => {
       inicializacaoEmAndamento = true;
       setEstadoInit(ESTADOS_INIT.INICIANDO);
 
       const removerSplash = () => {
+        if (currentInitSequence !== sequenceId) return;
         const splash = document.getElementById('pedeai-splash');
         if (splash) {
           splash.classList.add('splash-hidden');
@@ -244,16 +244,16 @@ async function inicializarInterno() {
         sessionStorage.setItem('splashExibido', 'true');
       };
 
-      // Fallback para remover splash se o Firestore travar
       const splashFallbackTimer = setTimeout(() => {
+        if (currentInitSequence !== sequenceId) return;
         console.warn('[init] fallback de segurança acionado — Firestore não respondeu a tempo');
         removerSplash();
         if (!navigator.onLine) mostrarEstadoOffline();
-        // AGORA TAMBÉM REJEITAMOS A PROMISE PARA DESBLOQUEAR
         throw new Error('Firestore timeout (fallback)');
       }, 17000);
 
       try {
+        if (currentInitSequence !== sequenceId) return;
         setEstadoInit(ESTADOS_INIT.CARREGANDO_FIREBASE);
 
         const cachedProdutos = sessionStorage.getItem('todosProdutosCache');
@@ -273,14 +273,20 @@ async function inicializarInterno() {
               getDocs(collection(db, "produtos")),
               getDocs(collection(db, "usuarios"))
             ]),
-            timeoutFirestore(8000)
+            timeoutFirestore(10000)
           ]);
+          
+          if (currentInitSequence !== sequenceId) {
+             clearTimeout(splashFallbackTimer);
+             return;
+          }
           
           const dadosLojistas = {};
           snapUsuarios.forEach(u => {
             dadosLojistas[u.id] = u.data();
           });
 
+          todosProdutos = []; // Limpeza preventiva para evitar duplicações em memória
           snapProdutos.forEach(d => {
             const data = d.data();
             if(data.promocao === 'sim' && data.promoExpira && Date.now() > data.promoExpira) data.promocao = 'nao';
@@ -298,6 +304,11 @@ async function inicializarInterno() {
             });
           });
           sessionStorage.setItem('todosProdutosCache', JSON.stringify(todosProdutos));
+        }
+
+        if (currentInitSequence !== sequenceId) {
+            clearTimeout(splashFallbackTimer);
+            return;
         }
 
         const domCache = sessionStorage.getItem('pedeai_dom_cache');
@@ -358,6 +369,11 @@ async function inicializarInterno() {
 
         await renderizarProdutos();
 
+        if (currentInitSequence !== sequenceId) {
+            clearTimeout(splashFallbackTimer);
+            return;
+        }
+
         clearTimeout(splashFallbackTimer);
 
         if (renderizacaoFoiConcluida()) {
@@ -372,6 +388,7 @@ async function inicializarInterno() {
         garantirRenderizacaoValida();
 
       } catch (e) { 
+        if (currentInitSequence !== sequenceId) return;
         console.error("Erro ao inicializar:", e); 
         setEstadoInit(ESTADOS_INIT.ERRO);
         clearTimeout(splashFallbackTimer);
@@ -382,12 +399,14 @@ async function inicializarInterno() {
         } else {
           garantirRenderizacaoValida();
         }
-        throw e; // Re-lança para o timeout global capturar
+        throw e;
       } finally {
-        inicializacaoEmAndamento = false;
+        if (currentInitSequence === sequenceId) {
+            inicializacaoEmAndamento = false;
+        }
       }
     })(),
-    20000, // 20 segundos
+    20000,
     'Tempo limite global da inicialização excedido'
   );
 }
@@ -415,7 +434,6 @@ function inicializarArialProdutos() {
     }
     
     const categoriaFirebase = modoAtual === 'restaurants' ? 'Comida' : (modoAtual === 'classifieds' ? 'Classificados' : 'Geral');
-    
     const poolTurbo = todosProdutos.filter(p => 
         p.turbo === 'sim' && 
         p.categoria === categoriaFirebase &&
@@ -430,8 +448,6 @@ function inicializarArialProdutos() {
         if (strip) {
             strip.style.opacity = '0';
             strip.style.pointerEvents = 'none';
-            // NÃO usar visibility:hidden nem display:none — causa recálculo do sticky
-            // chipContainer no iOS Safari, fazendo o cabeçalho sumir ao trocar filtros
         }
         return;
     }
@@ -441,12 +457,7 @@ function inicializarArialProdutos() {
         strip.style.pointerEvents = '';
     }
 
-    const paramModo =
-    modoAtual === 'restaurants'
-        ? 'gourmet'
-        : modoAtual === 'classifieds'
-            ? 'anuncio'
-            : 'produto';
+    const paramModo = modoAtual === 'restaurants' ? 'gourmet' : modoAtual === 'classifieds' ? 'anuncio' : 'produto';
     track.innerHTML = data.map(p => {
         const imgRaw = p.foto || (p.fotos && p.fotos[0]) || "https://via.placeholder.com/150";
         const img = imgRaw.includes('cloudinary.com') 
@@ -498,7 +509,6 @@ function inicializarArialProdutos() {
         }
     };
     document.addEventListener('visibilitychange', carouselVisibilityHandler);
-    
     carouselAnimationId = requestAnimationFrame(step);
 }
 
@@ -510,7 +520,6 @@ function renderizarFiltros() {
              onclick="filtrarPorPalavra('${nome === 'Todos' ? '' : nome}', this)">
             ${nome}
         </div>`).join('');
-   
 }
 
 async function renderizarProdutos(opcoes = {}) {
@@ -676,7 +685,6 @@ async function renderizarProdutos(opcoes = {}) {
     }
 
     grid.replaceChildren(fragment);
-
     filtrarCards();
 
     if (posterPromises.length) {
@@ -806,7 +814,6 @@ window.addEventListener('changeMode', (e) => {
             top: scrollModesCache[modoAtual] || 0,
             behavior: 'instant'
         });
-        // Removido: window.IosOverlayManager?.hideAll(); agora é chamado após o repaint no setAppMode
     }, 0);
 });
 
@@ -816,7 +823,7 @@ document.getElementById('inputBusca')?.addEventListener('input', (e) => {
     const novoTexto = e.target.value;
     if (buscaTimeout) clearTimeout(buscaTimeout);
     buscaTimeout = setTimeout(() => {
-        if (ultimoFiltroTexto === novoTexto) return; // ✅ evita duplicado
+        if (ultimoFiltroTexto === novoTexto) return;
         ultimoFiltroTexto = novoTexto;
         filtroTexto = novoTexto;
         window.scrollTo({ top: 0, behavior: 'instant' });
@@ -869,11 +876,9 @@ window.abrirDenuncia = (id, nome, lojistaId, nomeLoja) => {
     `;
 
     document.body.appendChild(modalDenuncia);
-    
     setTimeout(() => document.getElementById('ios-report-reason').focus(), 100);
 
     const fecharModal = () => { modalDenuncia.remove(); };
-
     document.getElementById('ios-report-cancel').onclick = fecharModal;
 
     document.getElementById('ios-report-submit').onclick = async () => {
@@ -919,7 +924,7 @@ window.mostrarToastIOS = (mensagem, erro = false) => {
 };
 
 let videoObserver = null;
-const videoBufferRecentes = []; // URLs dos últimos 2 vídeos assistidos — mantém buffer sem novo download
+const videoBufferRecentes = []; 
 const VIDEO_BUFFER_MAX = 2;
 
 function iniciarObservadorDeVideos({ pausarAntes = true } = {}) {
@@ -939,84 +944,75 @@ function iniciarObservadorDeVideos({ pausarAntes = true } = {}) {
             const video = entry.target;
             
             if (entry.isIntersecting) {
-    document.querySelectorAll('video').forEach(v => {
-        if (v !== video && !v.paused) {
-            v.pause();
-            v.currentTime = 0;
-        }
-    });
+                document.querySelectorAll('video').forEach(v => {
+                    if (v !== video && !v.paused) {
+                        v.pause();
+                        v.currentTime = 0;
+                    }
+                });
 
-    const videoSrc = video.getAttribute('src');
-    if (videoSrc) {
-        // Vídeo já tem src — buffer ainda presente, só dá play
-        video.muted = true;
-        // Registra no buffer de recentes
-        if (!videoBufferRecentes.includes(videoSrc)) {
-            videoBufferRecentes.push(videoSrc);
-            if (videoBufferRecentes.length > VIDEO_BUFFER_MAX) {
-                videoBufferRecentes.shift();
-            }
-        }
-        if (video.readyState >= 3) {
-            video.play().catch(() => {});
-            setTimeout(() => { if (!video.paused) video.pause(); }, 15000);
-        } else {
-            video.addEventListener('canplay', () => {
-                video.play().catch(() => {});
-                setTimeout(() => { if (!video.paused) video.pause(); }, 15000);
-            }, { once: true });
-        }
-    } else {
-        const lazySrc = video.getAttribute('data-src');
-        if (lazySrc) {
-            video.muted = true;
-            video.removeAttribute('data-src');
-            video.setAttribute('src', lazySrc);
-            // Registra no buffer de recentes
-            if (!videoBufferRecentes.includes(lazySrc)) {
-                videoBufferRecentes.push(lazySrc);
-                if (videoBufferRecentes.length > VIDEO_BUFFER_MAX) {
-                    videoBufferRecentes.shift();
+                const videoSrc = video.getAttribute('src');
+                if (videoSrc) {
+                    video.muted = true;
+                    if (!videoBufferRecentes.includes(videoSrc)) {
+                        videoBufferRecentes.push(videoSrc);
+                        if (videoBufferRecentes.length > VIDEO_BUFFER_MAX) {
+                            videoBufferRecentes.shift();
+                        }
+                    }
+                    if (video.readyState >= 3) {
+                        video.play().catch(() => {});
+                        setTimeout(() => { if (!video.paused) video.pause(); }, 15000);
+                    } else {
+                        video.addEventListener('canplay', () => {
+                            video.play().catch(() => {});
+                            setTimeout(() => { if (!video.paused) video.pause(); }, 15000);
+                        }, { once: true });
+                    }
+                } else {
+                    const lazySrc = video.getAttribute('data-src');
+                    if (lazySrc) {
+                        video.muted = true;
+                        video.removeAttribute('data-src');
+                        video.setAttribute('src', lazySrc);
+                        if (!videoBufferRecentes.includes(lazySrc)) {
+                            videoBufferRecentes.push(lazySrc);
+                            if (videoBufferRecentes.length > VIDEO_BUFFER_MAX) {
+                                videoBufferRecentes.shift();
+                            }
+                        }
+                        video.load();
+                        video.addEventListener('loadeddata', () => {
+                            video.style.opacity = '1';
+                        }, { once: true });
+                        video.addEventListener('canplay', () => {
+                            video.style.opacity = '1';
+                        }, { once: true });
+                        const tentarPlay = () => {
+                            if (!video.getAttribute('src')) return;
+                            video.play().catch(() => {});
+                            setTimeout(() => { if (!video.paused) video.pause(); }, 15000);
+                        };
+                        if (video.readyState >= 3) {
+                            tentarPlay();
+                        } else {
+                            video.addEventListener('canplay', tentarPlay, { once: true });
+                        }
+                    }
+                }
+            } else {
+                video.pause();
+                const srcAtual = video.getAttribute('src');
+                if (srcAtual) {
+                    if (videoBufferRecentes.includes(srcAtual)) {
+                        video.currentTime = 0; 
+                    } else {
+                        video.currentTime = 0;
+                        video.dataset.src = srcAtual;
+                        video.removeAttribute('src');
+                    }
                 }
             }
-            video.load();
-            // Revela o vídeo apenas quando há conteúdo visual — elimina o branco no iOS
-            video.addEventListener('loadeddata', () => {
-                video.style.opacity = '1';
-            }, { once: true });
-            // Fallback: se loadeddata não disparar (iOS restritivo), revela no canplay
-            video.addEventListener('canplay', () => {
-                video.style.opacity = '1';
-            }, { once: true });
-            const tentarPlay = () => {
-                if (!video.getAttribute('src')) return;
-                video.play().catch(() => {});
-                setTimeout(() => { if (!video.paused) video.pause(); }, 15000);
-            };
-            if (video.readyState >= 3) {
-                tentarPlay();
-            } else {
-                video.addEventListener('canplay', tentarPlay, { once: true });
-            }
-        }
-    }
-            } else {
-    video.pause();
-
-    const srcAtual = video.getAttribute('src');
-    if (srcAtual) {
-        // Mantém src e buffer se o vídeo está entre os 2 mais recentes
-        // Evita novo download do Cloudinary ao rolar de volta
-        if (videoBufferRecentes.includes(srcAtual)) {
-            video.currentTime = 0; // reseta posição mas mantém buffer
-        } else {
-            // Fora do buffer: descarta para liberar RAM
-            video.currentTime = 0;
-            video.dataset.src = srcAtual;
-            video.removeAttribute('src');
-        }
-    }
-}
         });
     }, { 
         rootMargin: "-35% 0px -35% 0px", 
@@ -1024,15 +1020,14 @@ function iniciarObservadorDeVideos({ pausarAntes = true } = {}) {
     }); 
     
     document.querySelectorAll('video').forEach(video => {
-    const attrSrc = video.getAttribute('src');
-    if (attrSrc && !video.dataset.src) {
-        video.dataset.src = attrSrc;
-        video.removeAttribute('src');
-    }
-
-    video.setAttribute('data-observed', 'true');
-    videoObserver.observe(video);
-});
+        const attrSrc = video.getAttribute('src');
+        if (attrSrc && !video.dataset.src) {
+            video.dataset.src = attrSrc;
+            video.removeAttribute('src');
+        }
+        video.setAttribute('data-observed', 'true');
+        videoObserver.observe(video);
+    });
 }
 
 const observerRender = new MutationObserver(() => {
@@ -1065,6 +1060,7 @@ window.addEventListener('load', () => {
     }
 });
 
+// Boot inicial controlado
 inicializar();
 
 window.addEventListener('pagehide', () => {
@@ -1096,17 +1092,16 @@ window.addEventListener('offline', () => mostrarEstadoOffline());
 
 window.addEventListener('online', () => {
     const grid = document.getElementById('grid-produtos');
-    if (grid && grid.querySelector('[data-offline-state]')) inicializar();
+    if (grid && grid.querySelector('[data-offline-state]')) {
+        inicializar();
+    }
 });
 
-// Tentar novamente: verifica conexão antes de agir
-// Usa inicializar() em vez de reload() para reconstruir corretamente no iPhone
 window.__tentarNovamente = async function() {
     if (window._isRetrying) return;
     window._isRetrying = true;
 
     try {
-        // Se houver SW, tenta ativar a nova versão
         if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
             navigator.serviceWorker.controller.postMessage('skipWaiting');
         }
@@ -1117,16 +1112,14 @@ window.__tentarNovamente = async function() {
                 btn.textContent = 'Sem conexão...';
                 setTimeout(() => { btn.textContent = 'Tentar novamente'; }, 2000);
             }
+            window._isRetrying = false;
             return;
         }
 
         const btn = document.querySelector('[data-offline-state] button');
         if (btn) btn.textContent = 'Carregando...';
 
-        // 🔥 invalida qualquer execução anterior (ESSENCIAL)
-inicializacaoPromiseAtual = null;
-
-        // Força reset completo e inicia nova execução
+        // Executa reinicialização forçada imediata em 1 clique
         await inicializar({ forceReset: true });
 
     } catch (err) {
@@ -1141,27 +1134,22 @@ inicializacaoPromiseAtual = null;
     }
 };
 
-function garantirRenderizacaoValida() {
+function garantizarRenderizacaoValida() {
     const grid = document.getElementById('grid-produtos');
     const chips = document.getElementById('chipContainer');
     const track = document.getElementById('carouselTrack');
 
-    // Se há produtos carregados no array mas o grid ficou totalmente em branco por delay de renderização
     if (grid && grid.children.length === 0 && todosProdutos.length > 0) {
         try { renderizarProdutos(); } catch (e) { console.error('Retentativa de renderizarProdutos falhou:', e); }
     }
-
     if (chips && chips.children.length === 0) {
         try { renderizarFiltros(); } catch (e) { console.error('Retentativa de renderizarFiltros falhou:', e); }
     }
-
     if (track && track.children.length === 0 && todosProdutos.length > 0) {
         try { inicializarArialProdutos(); } catch (e) { console.error('Retentativa de inicializarArialProdutos falhou:', e); }
     }
 }
 
-// ORQUESTRADOR ÚNICO: cada seção tem seu próprio try/catch, então uma falha
-// isolada no carrossel nunca impede categorias e produtos de renderizarem.
 function renderizarTudo() {
     try { inicializarArialProdutos(); } catch (e) { console.error('Falha ao renderizar o carrossel:', e); }
     try { renderizarFiltros(); } catch (e) { console.error('Falha ao renderizar as categorias:', e); }
@@ -1169,16 +1157,9 @@ function renderizarTudo() {
     garantirRenderizacaoValida();
 }
 
-// Flag para evitar execução concorrente do pageshow
 let pageshowRunning = false;
-
 window.addEventListener('pageshow', (event) => {
-    // Se estiver em retry, não faz nada (evita conflito)
-    if (window._isRetrying) {
-        console.log('[pageshow] Ignorado porque _isRetrying está ativo');
-        return;
-    }
-    if (pageshowRunning) return;
+    if (window._isRetrying || pageshowRunning) return;
     pageshowRunning = true;
 
     try {
@@ -1194,11 +1175,16 @@ window.addEventListener('pageshow', (event) => {
             return;
         }
 
-        // Função para finalizar carga com debounce
+        // Se uma inicialização controlada global já está ativa, o pageshow aguarda e não polui o fluxo
+        if (inicializacaoPromiseAtual) {
+            return;
+        }
+
         let finalizarCargaTimeout = null;
         const finalizarCarga = () => {
             if (finalizarCargaTimeout) clearTimeout(finalizarCargaTimeout);
             finalizarCargaTimeout = setTimeout(() => {
+                if (inicializacaoPromiseAtual) return;
                 try { inicializarArialProdutos(); } catch (e) { console.error('Falha carrossel (pageshow):', e); }
                 try { renderizarFiltros(); } catch (e) { console.error('Falha filtros (pageshow):', e); }
                 try {
@@ -1233,9 +1219,9 @@ window.addEventListener('pageshow', (event) => {
                     finalizarCarga();
                 }
             }, 50);
+            setTimeout(() => clearInterval(aguardar), 3000);
         }
     } finally {
-        // Libera a flag após um tempo para não bloquear futuros events
         setTimeout(() => { pageshowRunning = false; }, 500);
     }
 });

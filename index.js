@@ -213,14 +213,18 @@ function inicializar(opts = {}) {
         if (chips) chips.innerHTML = '';
     }
 
-    if (inicializacaoPromiseAtual) {
-        // Se já existe uma promise, retorna ela (não pode ter duas execuções)
-        return inicializacaoPromiseAtual;
-    }
-    inicializacaoPromiseAtual = inicializarInterno().finally(() => {
-        inicializacaoPromiseAtual = null;
-    });
+    if (inicializacaoPromiseAtual && !opcoes?.forceReset) {
     return inicializacaoPromiseAtual;
+}
+    inicializacaoPromiseAtual = (async () => {
+    try {
+        return await inicializarInterno();
+    } finally {
+        inicializacaoPromiseAtual = null;
+    }
+})();
+
+return inicializacaoPromiseAtual;
 }
 
 async function inicializarInterno() {
@@ -1119,14 +1123,8 @@ window.__tentarNovamente = async function() {
         const btn = document.querySelector('[data-offline-state] button');
         if (btn) btn.textContent = 'Carregando...';
 
-        // Se houver uma inicialização em andamento, aguarda com timeout
-        if (inicializacaoPromiseAtual) {
-            try {
-                await withTimeout(inicializacaoPromiseAtual, 5000, 'Espera pela inicialização anterior excedeu 5s');
-            } catch (e) {
-                console.warn('Timeout ao aguardar inicialização anterior. Prosseguindo com reset.', e);
-            }
-        }
+        // 🔥 invalida qualquer execução anterior (ESSENCIAL)
+inicializacaoPromiseAtual = null;
 
         // Força reset completo e inicia nova execução
         await inicializar({ forceReset: true });

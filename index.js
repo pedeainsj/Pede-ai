@@ -1055,43 +1055,61 @@ window.addEventListener('online', () => {
 // Tentar novamente: verifica conexão antes de agir
 // Usa inicializar() em vez de reload() para reconstruir corretamente no iPhone
 window.__tentarNovamente = async function() {
-    if (!navigator.onLine) {
-        // Ainda offline: pisca o botão para dar feedback
-        const btn = document.querySelector('[data-offline-state] button');
-        if (btn) {
-            btn.textContent = 'Sem conexão...';
-            setTimeout(() => { btn.textContent = 'Tentar novamente'; }, 2000);
+    // Evita múltiplos cliques enquanto um retry já está em andamento
+    if (window._isRetrying) return;
+    window._isRetrying = true;
+
+    try {
+        if (!navigator.onLine) {
+            const btn = document.querySelector('[data-offline-state] button');
+            if (btn) {
+                btn.textContent = 'Sem conexão...';
+                setTimeout(() => { btn.textContent = 'Tentar novamente'; }, 2000);
+            }
+            return;
         }
-        return;
-    }
-    const btn = document.querySelector('[data-offline-state] button');
-    if (btn) btn.textContent = 'Carregando...';
 
-    // Já existe uma inicialização real em andamento (ex: o listener 'online' disparou
-    // inicializar() no exato momento da reconexão, antes deste clique). Antes, esta linha
-    // era "if (inicializacaoEmAndamento) return" — o clique era descartado em silêncio.
-    // Agora aguardamos a MESMA Promise em andamento e deixamos este clique ver o resultado real.
-    if (inicializacaoPromiseAtual) {
-        await inicializacaoPromiseAtual;
-        return;
-    }
+        const btn = document.querySelector('[data-offline-state] button');
+        if (btn) btn.textContent = 'Carregando...';
 
-    // Reproduz o estado de cold start: zera todo estado intermediário para que
-    // inicializar() execute o fluxo completo (Firestore → filtros → produtos),
-    // sem atalhos de isReturning ou todosProdutos parcialmente populado que
-    // mascaram a falha e exigem múltiplos cliques para recuperar.
-    todosProdutos = [];
-    sessionStorage.removeItem('todosProdutosCache');
-    sessionStorage.removeItem('pedeai_dom_cache');
-    sessionStorage.removeItem('pedeai_carousel_cache');
+        // Função auxiliar que reseta completamente o estado e inicia a recarga
+        const resetarEInicializar = async () => {
+            todosProdutos = [];
+            sessionStorage.removeItem('todosProdutosCache');
+            sessionStorage.removeItem('pedeai_dom_cache');
+            sessionStorage.removeItem('pedeai_carousel_cache');
 
-    // Restaura skeleton imediatamente — feedback visual confirma que o retry está em andamento
-    const gridRetry = document.getElementById('grid-produtos');
-    if (gridRetry) {
-        gridRetry.innerHTML = '<div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>';
+            // Restaura skeleton imediatamente
+            const gridRetry = document.getElementById('grid-produtos');
+            if (gridRetry) {
+                gridRetry.innerHTML = `
+                    <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+                    <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+                    <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+                    <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+                `;
+            }
+
+            await inicializar();
+        };
+
+        // Se já existe uma inicialização em andamento, aguarda (tratando rejeição)
+        // e depois força reset + recarga, garantindo que o estado seja limpo.
+        if (inicializacaoPromiseAtual) {
+            try {
+                await inicializacaoPromiseAtual;
+            } catch (e) {
+                console.warn('Promise de inicialização anterior rejeitada; forçando reset.', e);
+            }
+            // Após a promise antiga terminar (sucesso ou falha), resetamos e recarregamos
+            await resetarEInicializar();
+        } else {
+            // Sem promise pendente, reset e recarga diretos
+            await resetarEInicializar();
+        }
+    } finally {
+        window._isRetrying = false;
     }
-    // Online: reconstrói sem reload — fluxo idêntico ao cold start
-    await inicializar();
 };
 
 function garantirRenderizacaoValida() {

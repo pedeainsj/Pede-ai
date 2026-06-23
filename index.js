@@ -186,13 +186,35 @@ function renderizacaoFoiConcluida() {
     return gridOk && chipsOk;
 }
 
-function inicializar() {
+function inicializar(opts = {}) {
+    const { forceReset = false } = opts;
+    if (forceReset) {
+        // Reset completo do estado
+        todosProdutos = [];
+        sessionStorage.removeItem('todosProdutosCache');
+        sessionStorage.removeItem('pedeai_dom_cache');
+        sessionStorage.removeItem('pedeai_carousel_cache');
+        sessionStorage.removeItem('pedeai_scroll');
+        urlCache.clear();
+        for (const key in ordemFixaCache) delete ordemFixaCache[key];
+        // Limpa DOM para skeleton
+        const grid = document.getElementById('grid-produtos');
+        if (grid) {
+            grid.innerHTML = `
+                <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+                <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+                <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+                <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+            `;
+        }
+        const track = document.getElementById('carouselTrack');
+        if (track) track.innerHTML = '';
+        const chips = document.getElementById('chipContainer');
+        if (chips) chips.innerHTML = '';
+    }
+
     if (inicializacaoPromiseAtual) {
-        // Já existe uma inicialização real em andamento (ex: o listener 'online' disparou
-        // inicializar() no exato momento da reconexão, antes do clique). Antes, esta chamada
-        // concorrente era só descartada (return vazio) e quem chamou nunca sabia o resultado —
-        // por isso o clique "não fazia nada" e era preciso repetir várias vezes.
-        console.warn('[init] inicializar() já em andamento — reaproveitando a mesma Promise em vez de ignorar a chamada');
+        // Se já existe uma promise, retorna ela (não pode ter duas execuções)
         return inicializacaoPromiseAtual;
     }
     inicializacaoPromiseAtual = inicializarInterno().finally(() => {
@@ -1076,99 +1098,49 @@ window.addEventListener('online', () => {
 // Tentar novamente: verifica conexão antes de agir
 // Usa inicializar() em vez de reload() para reconstruir corretamente no iPhone
 window.__tentarNovamente = async function() {
-  if (window._isRetrying) return;
-  window._isRetrying = true;
+    if (window._isRetrying) return;
+    window._isRetrying = true;
 
-  try {
-    // Se houver SW, tenta ativar a nova versão
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage('skipWaiting');
+    try {
+        // Se houver SW, tenta ativar a nova versão
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage('skipWaiting');
+        }
+
+        if (!navigator.onLine) {
+            const btn = document.querySelector('[data-offline-state] button');
+            if (btn) {
+                btn.textContent = 'Sem conexão...';
+                setTimeout(() => { btn.textContent = 'Tentar novamente'; }, 2000);
+            }
+            return;
+        }
+
+        const btn = document.querySelector('[data-offline-state] button');
+        if (btn) btn.textContent = 'Carregando...';
+
+        // Se houver uma inicialização em andamento, aguarda com timeout
+        if (inicializacaoPromiseAtual) {
+            try {
+                await withTimeout(inicializacaoPromiseAtual, 5000, 'Espera pela inicialização anterior excedeu 5s');
+            } catch (e) {
+                console.warn('Timeout ao aguardar inicialização anterior. Prosseguindo com reset.', e);
+            }
+        }
+
+        // Força reset completo e inicia nova execução
+        await inicializar({ forceReset: true });
+
+    } catch (err) {
+        console.error('Erro no tentarNovamente:', err);
+        mostrarEstadoOffline();
+    } finally {
+        window._isRetrying = false;
+        const btn = document.querySelector('[data-offline-state] button');
+        if (btn && btn.textContent === 'Carregando...') {
+            btn.textContent = 'Tentar novamente';
+        }
     }
-
-    if (!navigator.onLine) {
-      const btn = document.querySelector('[data-offline-state] button');
-      if (btn) {
-        btn.textContent = 'Sem conexão...';
-        setTimeout(() => { btn.textContent = 'Tentar novamente'; }, 2000);
-      }
-      return;
-    }
-
-    const btn = document.querySelector('[data-offline-state] button');
-    if (btn) btn.textContent = 'Carregando...';
-
-    // Função auxiliar que reseta completamente o estado e inicia a recarga
-    const resetarEInicializar = async () => {
-      // 1. Limpa todos os observadores e listeners de vídeo
-      if (videoObserver) {
-        videoObserver.disconnect();
-        videoObserver = null;
-      }
-      document.querySelectorAll('video').forEach(v => {
-        v.pause();
-        v.removeAttribute('src');
-        v.load();
-      });
-      if (window._observerRender) {
-        window._observerRender.disconnect();
-        window._observerRender = null;
-      }
-
-      // 2. Zera estado global e caches
-      todosProdutos = [];
-      sessionStorage.removeItem('todosProdutosCache');
-      sessionStorage.removeItem('pedeai_dom_cache');
-      sessionStorage.removeItem('pedeai_carousel_cache');
-      sessionStorage.removeItem('pedeai_scroll');
-      urlCache.clear();
-      for (const key in ordemFixaCache) delete ordemFixaCache[key];
-
-      // 3. Restaura skeleton
-      const gridRetry = document.getElementById('grid-produtos');
-      if (gridRetry) {
-        gridRetry.innerHTML = `
-          <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-          <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-          <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-          <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-        `;
-      }
-      const track = document.getElementById('carouselTrack');
-      if (track) track.innerHTML = '';
-      const chips = document.getElementById('chipContainer');
-      if (chips) chips.innerHTML = '';
-
-      // 4. Aguarda um ciclo para garantir que tudo foi removido
-      await new Promise(resolve => requestAnimationFrame(resolve));
-
-      // 5. Chama inicialização com timeout próprio (já tem 20s internamente)
-      await inicializar();
-    };
-
-    // Se já existe uma inicialização em andamento, aguarda com timeout de 5s
-    if (inicializacaoPromiseAtual) {
-      try {
-        await withTimeout(inicializacaoPromiseAtual, 5000, 'Espera pela inicialização anterior excedeu 5s');
-      } catch (e) {
-        console.warn('Timeout ao aguardar inicialização anterior. Prosseguindo com reset.', e);
-        // Não interrompe o fluxo; vamos resetar mesmo assim
-      }
-      // Após a promise antiga terminar (ou timeout), resetamos e recarregamos
-      await resetarEInicializar();
-    } else {
-      // Sem promise pendente, reset e recarga diretos
-      await resetarEInicializar();
-    }
-  } catch (err) {
-    console.error('Erro no tentarNovamente:', err);
-    mostrarEstadoOffline();
-  } finally {
-    window._isRetrying = false;
-    const btn = document.querySelector('[data-offline-state] button');
-    if (btn && btn.textContent === 'Carregando...') {
-      btn.textContent = 'Tentar novamente';
-    }
-  }
 };
 
 function garantirRenderizacaoValida() {

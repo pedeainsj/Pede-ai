@@ -18,6 +18,14 @@ let isReturning = false;
 let inicializacaoEmAndamento = false; // mutex: evita inicializar() concorrente (causa raiz da duplicação)
 let inicializacaoPromiseAtual = null; // guarda a Promise da inicialização em andamento, para que uma chamada concorrente (ex: listener 'online' x clique) AGUARDE o mesmo resultado em vez de ser descartada em silêncio
 
+// Timeout seguro para qualquer Promise
+function withTimeout(promise, ms, message = 'Operação excedeu o tempo limite') {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms))
+  ]);
+}
+
 // Cache para armazenar a posição do scroll de cada categoria
 const scrollModesCache = {
     'products': 0,
@@ -194,74 +202,76 @@ function inicializar() {
 }
 
 async function inicializarInterno() {
-    inicializacaoEmAndamento = true;
-    setEstadoInit(ESTADOS_INIT.INICIANDO);
+  // Timeout global de segurança: 20 segundos
+  return withTimeout(
+    (async () => {
+      inicializacaoEmAndamento = true;
+      setEstadoInit(ESTADOS_INIT.INICIANDO);
 
-    const removerSplash = () => {
+      const removerSplash = () => {
         const splash = document.getElementById('pedeai-splash');
         if (splash) {
-            splash.classList.add('splash-hidden');
-            splash.addEventListener('transitionend', () => splash.remove(), { once: true });
-            // Fallback caso transitionend não dispare (ex: elemento já display:none)
-            setTimeout(() => { if (splash.isConnected) splash.remove(); }, 600);
+          splash.classList.add('splash-hidden');
+          splash.addEventListener('transitionend', () => splash.remove(), { once: true });
+          setTimeout(() => { if (splash.isConnected) splash.remove(); }, 600);
         }
         sessionStorage.setItem('splashExibido', 'true');
-    };
+      };
 
-    // ÚLTIMO fallback de segurança: nunca decide sucesso, apenas evita splash
-    // travado para sempre se o Firebase travar sem lançar erro (ex: iPhone offline).
-    // Maior que a soma dos timeouts internos do Firestore (8000ms + 8000ms = 16000ms).
-    const splashFallbackTimer = setTimeout(() => {
+      // Fallback para remover splash se o Firestore travar
+      const splashFallbackTimer = setTimeout(() => {
         console.warn('[init] fallback de segurança acionado — Firestore não respondeu a tempo');
         removerSplash();
         if (!navigator.onLine) mostrarEstadoOffline();
-    }, 17000);
+        // AGORA TAMBÉM REJEITAMOS A PROMISE PARA DESBLOQUEAR
+        throw new Error('Firestore timeout (fallback)');
+      }, 17000);
 
-    try {
+      try {
         setEstadoInit(ESTADOS_INIT.CARREGANDO_FIREBASE);
 
         const cachedProdutos = sessionStorage.getItem('todosProdutosCache');
         if (cachedProdutos && !todosProdutos.length) {
-            try {
-                todosProdutos = JSON.parse(cachedProdutos);
-                console.log('Produtos restaurados do cache');
-            } catch(e) { console.warn(e); }
+          try {
+            todosProdutos = JSON.parse(cachedProdutos);
+            console.log('Produtos restaurados do cache');
+          } catch(e) { console.warn(e); }
         }
 
         setEstadoInit(ESTADOS_INIT.CARREGANDO_PRODUTOS);
 
         if (todosProdutos.length === 0) {
-            const timeoutFirestore = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore timeout ao reabrir o app')), ms));
-            const [snapProdutos, snapUsuarios] = await Promise.race([
-                Promise.all([
-                    getDocs(collection(db, "produtos")),
-                    getDocs(collection(db, "usuarios"))
-                ]),
-                timeoutFirestore(8000)
-            ]);
+          const timeoutFirestore = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore timeout ao reabrir o app')), ms));
+          const [snapProdutos, snapUsuarios] = await Promise.race([
+            Promise.all([
+              getDocs(collection(db, "produtos")),
+              getDocs(collection(db, "usuarios"))
+            ]),
+            timeoutFirestore(8000)
+          ]);
+          
+          const dadosLojistas = {};
+          snapUsuarios.forEach(u => {
+            dadosLojistas[u.id] = u.data();
+          });
+
+          snapProdutos.forEach(d => {
+            const data = d.data();
+            if(data.promocao === 'sim' && data.promoExpira && Date.now() > data.promoExpira) data.promocao = 'nao';
             
-            const dadosLojistas = {};
-            snapUsuarios.forEach(u => {
-                dadosLojistas[u.id] = u.data();
-            });
+            const lojista = dadosLojistas[data.owner];
+            const regras = GetRegrasLojista(lojista);
 
-            snapProdutos.forEach(d => {
-                const data = d.data();
-                if(data.promocao === 'sim' && data.promoExpira && Date.now() > data.promoExpira) data.promocao = 'nao';
-                
-                const lojista = dadosLojistas[data.owner];
-                const regras = GetRegrasLojista(lojista);
-
-                todosProdutos.push({ 
-                    id: d.id, 
-                    ...data, 
-                    nomeLoja: lojista?.nomeLoja || 'Loja Parceira',
-                    planoLojista: lojista?.planoAtivo || 'basico',
-                    isLojistaAprovado: lojista ? regras.podeExibirProdutos : false,
-                    isProdutoAtivo: data.status !== 'inativo' && data.visivel !== false
-                });
+            todosProdutos.push({ 
+              id: d.id, 
+              ...data, 
+              nomeLoja: lojista?.nomeLoja || 'Loja Parceira',
+              planoLojista: lojista?.planoAtivo || 'basico',
+              isLojistaAprovado: lojista ? regras.podeExibirProdutos : false,
+              isProdutoAtivo: data.status !== 'inativo' && data.visivel !== false
             });
-            sessionStorage.setItem('todosProdutosCache', JSON.stringify(todosProdutos));
+          });
+          sessionStorage.setItem('todosProdutosCache', JSON.stringify(todosProdutos));
         }
 
         const domCache = sessionStorage.getItem('pedeai_dom_cache');
@@ -269,49 +279,49 @@ async function inicializarInterno() {
 
         const navAtivo = document.getElementById(`nav-${modoAtual}`);
         if(navAtivo) {
-            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
-            navAtivo.classList.add('active');
+          document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+          navAtivo.classList.add('active');
         }
         
         const logo = document.getElementById('main-logo');
         if(logo) {
-            let iconHtml = modoAtual === 'restaurants' ? '<i class="fas fa-utensils"></i>' : (modoAtual === 'classifieds' ? '<i class="fas fa-bullhorn"></i>' : '<i class="fas fa-bag-shopping"></i>');
-            logo.innerHTML = `${iconHtml} Pede Aí`;
+          let iconHtml = modoAtual === 'restaurants' ? '<i class="fas fa-utensils"></i>' : (modoAtual === 'classifieds' ? '<i class="fas fa-bullhorn"></i>' : '<i class="fas fa-bag-shopping"></i>');
+          logo.innerHTML = `${iconHtml} Pede Aí`;
         }
 
         if (isReturning) {
-            const domCache = sessionStorage.getItem('pedeai_dom_cache');
-            const grid = document.getElementById('grid-produtos');
-            
-            if (domCache && grid && domCache.trim() !== "") {
-                setEstadoInit(ESTADOS_INIT.CARREGANDO_CATEGORIAS);
-                grid.innerHTML = domCache;
-                grid.querySelectorAll('video').forEach(video => {
-                    const rawSrc = video.getAttribute('src') || video.getAttribute('data-src');
-                    if (rawSrc) {
-                        const transformedSrc = otimizarVideoURL(rawSrc);
-                        video.setAttribute('src', transformedSrc);
-                        video.removeAttribute('data-src');
-                    }
-                });
-                setEstadoInit(ESTADOS_INIT.CARREGANDO_CARROSSEL);
-                const carouselCache = sessionStorage.getItem('pedeai_carousel_cache');
-                const track = document.getElementById('carouselTrack');
-                if (carouselCache && track) track.innerHTML = carouselCache;
-                renderizarFiltros();
-                const scrollPos = sessionStorage.getItem('pedeai_scroll');
-                if (scrollPos) window.scrollTo(0, parseInt(scrollPos));
-                isReturning = false;
-
-                clearTimeout(splashFallbackTimer);
-                setEstadoInit(ESTADOS_INIT.RENDERIZACAO_CONCLUIDA);
-                removerSplash();
-                window.IosOverlayManager?.hideAll();
-                garantirRenderizacaoValida();
-                return;
-            }
-            console.warn("Cache do grid inválido ou vazio. Recriando normalmente.");
+          const domCache = sessionStorage.getItem('pedeai_dom_cache');
+          const grid = document.getElementById('grid-produtos');
+          
+          if (domCache && grid && domCache.trim() !== "") {
+            setEstadoInit(ESTADOS_INIT.CARREGANDO_CATEGORIAS);
+            grid.innerHTML = domCache;
+            grid.querySelectorAll('video').forEach(video => {
+              const rawSrc = video.getAttribute('src') || video.getAttribute('data-src');
+              if (rawSrc) {
+                const transformedSrc = otimizarVideoURL(rawSrc);
+                video.setAttribute('src', transformedSrc);
+                video.removeAttribute('data-src');
+              }
+            });
+            setEstadoInit(ESTADOS_INIT.CARREGANDO_CARROSSEL);
+            const carouselCache = sessionStorage.getItem('pedeai_carousel_cache');
+            const track = document.getElementById('carouselTrack');
+            if (carouselCache && track) track.innerHTML = carouselCache;
+            renderizarFiltros();
+            const scrollPos = sessionStorage.getItem('pedeai_scroll');
+            if (scrollPos) window.scrollTo(0, parseInt(scrollPos));
             isReturning = false;
+
+            clearTimeout(splashFallbackTimer);
+            setEstadoInit(ESTADOS_INIT.RENDERIZACAO_CONCLUIDA);
+            removerSplash();
+            window.IosOverlayManager?.hideAll();
+            garantirRenderizacaoValida();
+            return;
+          }
+          console.warn("Cache do grid inválido ou vazio. Recriando normalmente.");
+          isReturning = false;
         }
 
         setEstadoInit(ESTADOS_INIT.CARREGANDO_CATEGORIAS);
@@ -325,32 +335,35 @@ async function inicializarInterno() {
         clearTimeout(splashFallbackTimer);
 
         if (renderizacaoFoiConcluida()) {
-            setEstadoInit(ESTADOS_INIT.RENDERIZACAO_CONCLUIDA);
-            removerSplash();
+          setEstadoInit(ESTADOS_INIT.RENDERIZACAO_CONCLUIDA);
+          removerSplash();
         } else {
-            // Render não confirmado no DOM: mantém o splash fora e expõe o skeleton/
-            // estado de retry em vez de mascarar o problema escondendo-o atrás do splash.
-            console.warn('[init] renderização não confirmada no DOM — mantendo splash removido para expor skeleton/retry');
-            setEstadoInit(ESTADOS_INIT.ERRO);
-            removerSplash();
+          console.warn('[init] renderização não confirmada no DOM — mantendo splash removido para expor skeleton/retry');
+          setEstadoInit(ESTADOS_INIT.ERRO);
+          removerSplash();
         }
         window.IosOverlayManager?.hideAll();
         garantirRenderizacaoValida();
 
-    } catch (e) { 
+      } catch (e) { 
         console.error("Erro ao inicializar:", e); 
         setEstadoInit(ESTADOS_INIT.ERRO);
         clearTimeout(splashFallbackTimer);
         removerSplash();
         window.IosOverlayManager?.hideAll();
         if (todosProdutos.length === 0) {
-            mostrarEstadoOffline();
+          mostrarEstadoOffline();
         } else {
-            garantirRenderizacaoValida();
+          garantirRenderizacaoValida();
         }
-    } finally {
+        throw e; // Re-lança para o timeout global capturar
+      } finally {
         inicializacaoEmAndamento = false;
-    }
+      }
+    })(),
+    20000, // 20 segundos
+    'Tempo limite global da inicialização excedido'
+  );
 }
 
 let carouselAnimationId = null;
@@ -1063,96 +1076,99 @@ window.addEventListener('online', () => {
 // Tentar novamente: verifica conexão antes de agir
 // Usa inicializar() em vez de reload() para reconstruir corretamente no iPhone
 window.__tentarNovamente = async function() {
-    if (window._isRetrying) return;
-    window._isRetrying = true;
+  if (window._isRetrying) return;
+  window._isRetrying = true;
 
-    try {
-        // Se houver SW, tenta ativar a nova versão
-        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-            navigator.serviceWorker.controller.postMessage('skipWaiting');
-        }
-
-        if (!navigator.onLine) {
-            const btn = document.querySelector('[data-offline-state] button');
-            if (btn) {
-                btn.textContent = 'Sem conexão...';
-                setTimeout(() => { btn.textContent = 'Tentar novamente'; }, 2000);
-            }
-            return;
-        }
-
-        const btn = document.querySelector('[data-offline-state] button');
-        if (btn) btn.textContent = 'Carregando...';
-
-        // Função auxiliar que reseta completamente o estado e inicia a recarga
-        const resetarEInicializar = async () => {
-            // 1. Limpa todos os observadores e listeners de vídeo
-            if (videoObserver) {
-                videoObserver.disconnect();
-                videoObserver = null;
-            }
-            document.querySelectorAll('video').forEach(v => {
-                v.pause();
-                v.removeAttribute('src');
-                v.load();
-            });
-            // Remove MutationObserver se existir
-            if (window._observerRender) {
-                window._observerRender.disconnect();
-                window._observerRender = null;
-            }
-
-            // 2. Zera estado global e caches
-            todosProdutos = [];
-            sessionStorage.removeItem('todosProdutosCache');
-            sessionStorage.removeItem('pedeai_dom_cache');
-            sessionStorage.removeItem('pedeai_carousel_cache');
-            sessionStorage.removeItem('pedeai_scroll');
-            // Limpa caches de URL
-            urlCache.clear();
-            ordemFixaCache = {};
-
-            // 3. Restaura skeleton
-            const gridRetry = document.getElementById('grid-produtos');
-            if (gridRetry) {
-                gridRetry.innerHTML = `
-                    <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-                    <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-                    <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-                    <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
-                `;
-            }
-            // Limpa carrossel
-            const track = document.getElementById('carouselTrack');
-            if (track) track.innerHTML = '';
-            // Limpa chips
-            const chips = document.getElementById('chipContainer');
-            if (chips) chips.innerHTML = '';
-
-            // 4. Aguarda um ciclo para garantir que tudo foi removido
-            await new Promise(resolve => requestAnimationFrame(resolve));
-
-            // 5. Chama inicialização
-            await inicializar();
-        };
-
-        // Se já existe uma inicialização em andamento, aguarda (tratando rejeição)
-        // e depois força reset + recarga, garantindo que o estado seja limpo.
-        if (inicializacaoPromiseAtual) {
-            try {
-                await inicializacaoPromiseAtual;
-            } catch (e) {
-                console.warn('Promise de inicialização anterior rejeitada; forçando reset.', e);
-            }
-            // Após a promise antiga terminar (sucesso ou falha), resetamos e recarregamos
-            await resetarEInicializar();
-        } else {
-            // Sem promise pendente, reset e recarga diretos
-            await resetarEInicializar();
-        }
-    } finally {
-        window._isRetrying = false;
+  try {
+    // Se houver SW, tenta ativar a nova versão
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage('skipWaiting');
     }
+
+    if (!navigator.onLine) {
+      const btn = document.querySelector('[data-offline-state] button');
+      if (btn) {
+        btn.textContent = 'Sem conexão...';
+        setTimeout(() => { btn.textContent = 'Tentar novamente'; }, 2000);
+      }
+      return;
+    }
+
+    const btn = document.querySelector('[data-offline-state] button');
+    if (btn) btn.textContent = 'Carregando...';
+
+    // Função auxiliar que reseta completamente o estado e inicia a recarga
+    const resetarEInicializar = async () => {
+      // 1. Limpa todos os observadores e listeners de vídeo
+      if (videoObserver) {
+        videoObserver.disconnect();
+        videoObserver = null;
+      }
+      document.querySelectorAll('video').forEach(v => {
+        v.pause();
+        v.removeAttribute('src');
+        v.load();
+      });
+      if (window._observerRender) {
+        window._observerRender.disconnect();
+        window._observerRender = null;
+      }
+
+      // 2. Zera estado global e caches
+      todosProdutos = [];
+      sessionStorage.removeItem('todosProdutosCache');
+      sessionStorage.removeItem('pedeai_dom_cache');
+      sessionStorage.removeItem('pedeai_carousel_cache');
+      sessionStorage.removeItem('pedeai_scroll');
+      urlCache.clear();
+      for (const key in ordemFixaCache) delete ordemFixaCache[key];
+
+      // 3. Restaura skeleton
+      const gridRetry = document.getElementById('grid-produtos');
+      if (gridRetry) {
+        gridRetry.innerHTML = `
+          <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+          <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+          <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+          <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        `;
+      }
+      const track = document.getElementById('carouselTrack');
+      if (track) track.innerHTML = '';
+      const chips = document.getElementById('chipContainer');
+      if (chips) chips.innerHTML = '';
+
+      // 4. Aguarda um ciclo para garantir que tudo foi removido
+      await new Promise(resolve => requestAnimationFrame(resolve));
+
+      // 5. Chama inicialização com timeout próprio (já tem 20s internamente)
+      await inicializar();
+    };
+
+    // Se já existe uma inicialização em andamento, aguarda com timeout de 5s
+    if (inicializacaoPromiseAtual) {
+      try {
+        await withTimeout(inicializacaoPromiseAtual, 5000, 'Espera pela inicialização anterior excedeu 5s');
+      } catch (e) {
+        console.warn('Timeout ao aguardar inicialização anterior. Prosseguindo com reset.', e);
+        // Não interrompe o fluxo; vamos resetar mesmo assim
+      }
+      // Após a promise antiga terminar (ou timeout), resetamos e recarregamos
+      await resetarEInicializar();
+    } else {
+      // Sem promise pendente, reset e recarga diretos
+      await resetarEInicializar();
+    }
+  } catch (err) {
+    console.error('Erro no tentarNovamente:', err);
+    mostrarEstadoOffline();
+  } finally {
+    window._isRetrying = false;
+    const btn = document.querySelector('[data-offline-state] button');
+    if (btn && btn.textContent === 'Carregando...') {
+      btn.textContent = 'Tentar novamente';
+    }
+  }
 };
 
 function garantirRenderizacaoValida() {

@@ -173,7 +173,7 @@ function setEstadoInit(novoEstado) {
 function renderizacaoFoiConcluida() {
     const grid = document.getElementById('grid-produtos');
     const chips = document.getElementById('chipContainer');
-    const gridOk = !!grid && grid.children.length > 0 && !grid.querySelector('[data-skeleton]');
+    const gridOk = !!grid && grid.children.length > 0 && !grid.querySelector('.skeleton-card');
     const chipsOk = !!chips && chips.children.length > 0;
     return gridOk && chipsOk;
 }
@@ -206,20 +206,33 @@ function inicializar(opts = {}) {
         if (chips) chips.innerHTML = '';
         
         inicializacaoPromiseAtual = null;
+        inicializacaoEmAndamento = false;
     }
 
-    if (inicializacaoPromiseAtual) {
-        return inicializacaoPromiseAtual;
+    if (inicializacaoEmAndamento || inicializacaoPromiseAtual) {
+        return inicializacaoPromiseAtual || Promise.resolve();
     }
 
     const sequenceId = currentInitSequence;
 
     inicializacaoPromiseAtual = (async () => {
         try {
+            inicializacaoEmAndamento = true;
             return await inicializarInterno(sequenceId);
+        } catch (err) {
+            console.error("[Bootstrap Lock] Erro detectado no fluxo de inicialização:", err);
+            if (currentInitSequence === sequenceId) {
+                const splash = document.getElementById('pedeai-splash');
+                if (splash) splash.remove();
+                if (todosProdutos.length === 0) {
+                    mostrarEstadoOffline();
+                }
+            }
+            throw err;
         } finally {
             if (currentInitSequence === sequenceId) {
                 inicializacaoPromiseAtual = null;
+                inicializacaoEmAndamento = false;
             }
         }
     })();
@@ -249,7 +262,6 @@ async function inicializarInterno(sequenceId) {
         console.warn('[init] fallback de segurança acionado — Firestore não respondeu a tempo');
         removerSplash();
         if (!navigator.onLine) mostrarEstadoOffline();
-        throw new Error('Firestore timeout (fallback)');
       }, 17000);
 
       try {

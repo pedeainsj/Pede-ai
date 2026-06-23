@@ -1099,18 +1099,17 @@ function garantirRenderizacaoValida() {
     const chips = document.getElementById('chipContainer');
     const track = document.getElementById('carouselTrack');
 
+    // Se há produtos carregados no array mas o grid ficou totalmente em branco por delay de renderização
     if (grid && grid.children.length === 0 && todosProdutos.length > 0) {
-        grid.innerHTML = '<div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div><div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>';
-        setTimeout(() => { try { renderizarProdutos(); } catch (e) { console.error('Retentativa de renderizarProdutos falhou:', e); } }, 60);
+        try { renderizarProdutos(); } catch (e) { console.error('Retentativa de renderizarProdutos falhou:', e); }
     }
 
     if (chips && chips.children.length === 0) {
-        chips.innerHTML = '<span class="skeleton-chip"></span><span class="skeleton-chip"></span><span class="skeleton-chip"></span><span class="skeleton-chip"></span>';
-        setTimeout(() => { try { renderizarFiltros(); } catch (e) { console.error('Retentativa de renderizarFiltros falhou:', e); } }, 60);
+        try { renderizarFiltros(); } catch (e) { console.error('Retentativa de renderizarFiltros falhou:', e); }
     }
 
     if (track && track.children.length === 0 && todosProdutos.length > 0) {
-        setTimeout(() => { try { inicializarArialProdutos(); } catch (e) { console.error('Retentativa de inicializarArialProdutos falhou:', e); } }, 60);
+        try { inicializarArialProdutos(); } catch (e) { console.error('Retentativa de inicializarArialProdutos falhou:', e); }
     }
 }
 

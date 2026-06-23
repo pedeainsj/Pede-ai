@@ -1,6 +1,14 @@
 import { db, GetRegrasLojista, APP_URL } from './config.js';
 import { collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// Verifica se o Service Worker foi atualizado e recarrega a página
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('[SW] Controller mudou, recarregando para garantir nova versão');
+        window.location.reload();
+    });
+}
+
 let todosProdutos = [];
 let modoAtual = sessionStorage.getItem('pedeai_mode') || 'products';
 let filtroChip = '';
@@ -1055,11 +1063,15 @@ window.addEventListener('online', () => {
 // Tentar novamente: verifica conexão antes de agir
 // Usa inicializar() em vez de reload() para reconstruir corretamente no iPhone
 window.__tentarNovamente = async function() {
-    // Evita múltiplos cliques enquanto um retry já está em andamento
     if (window._isRetrying) return;
     window._isRetrying = true;
 
     try {
+        // Se houver SW, tenta ativar a nova versão
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage('skipWaiting');
+        }
+
         if (!navigator.onLine) {
             const btn = document.querySelector('[data-offline-state] button');
             if (btn) {
@@ -1074,12 +1086,33 @@ window.__tentarNovamente = async function() {
 
         // Função auxiliar que reseta completamente o estado e inicia a recarga
         const resetarEInicializar = async () => {
+            // 1. Limpa todos os observadores e listeners de vídeo
+            if (videoObserver) {
+                videoObserver.disconnect();
+                videoObserver = null;
+            }
+            document.querySelectorAll('video').forEach(v => {
+                v.pause();
+                v.removeAttribute('src');
+                v.load();
+            });
+            // Remove MutationObserver se existir
+            if (window._observerRender) {
+                window._observerRender.disconnect();
+                window._observerRender = null;
+            }
+
+            // 2. Zera estado global e caches
             todosProdutos = [];
             sessionStorage.removeItem('todosProdutosCache');
             sessionStorage.removeItem('pedeai_dom_cache');
             sessionStorage.removeItem('pedeai_carousel_cache');
+            sessionStorage.removeItem('pedeai_scroll');
+            // Limpa caches de URL
+            urlCache.clear();
+            ordemFixaCache = {};
 
-            // Restaura skeleton imediatamente
+            // 3. Restaura skeleton
             const gridRetry = document.getElementById('grid-produtos');
             if (gridRetry) {
                 gridRetry.innerHTML = `
@@ -1089,7 +1122,17 @@ window.__tentarNovamente = async function() {
                     <div class="skeleton-card"><div class="skeleton-img"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
                 `;
             }
+            // Limpa carrossel
+            const track = document.getElementById('carouselTrack');
+            if (track) track.innerHTML = '';
+            // Limpa chips
+            const chips = document.getElementById('chipContainer');
+            if (chips) chips.innerHTML = '';
 
+            // 4. Aguarda um ciclo para garantir que tudo foi removido
+            await new Promise(resolve => requestAnimationFrame(resolve));
+
+            // 5. Chama inicialização
             await inicializar();
         };
 
@@ -1140,69 +1183,73 @@ function renderizarTudo() {
     garantirRenderizacaoValida();
 }
 
+// Flag para evitar execução concorrente do pageshow
+let pageshowRunning = false;
+
 window.addEventListener('pageshow', (event) => {
-    const modoSalvo = sessionStorage.getItem('pedeai_mode') || 'products';
-
-    // Modo classifieds é gerenciado inteiramente pelo classifieds-app.js e pelo
-    // pageshow do index.html. O index.js não deve interferir com overlay nem
-    // com finalizarCarga quando o modo ativo é classifieds.
-    if (modoSalvo === 'classifieds') return;
-
-    // Mesma condição já usada no index.html para distinguir bfcache/voltar de
-    // um carregamento novo. Sem isso, este listener corria em paralelo com
-    // inicializar() em todo cold start, disputando carrossel/categorias/grid.
-    if (!(event.persisted || window.performance.navigation.type === 2)) return;
-
-    // Apenas aciona o overlay dinâmico se a Splash Screen já foi processada nesta sessão ou em bfcache
-    // O overlay só deve ser exibido ao trocar de modo (via setAppMode), não ao restaurar a página.
-    // Portanto, não mostramos overlay aqui para evitar overflow preso ao voltar da vitrine.
-    // Mantemos apenas para classifieds, se necessário.
-    if (modoSalvo === 'classifieds' && (sessionStorage.getItem('splashExibido') === 'true' || event.persisted)) {
-        if (window.IosOverlayManager) {
-            window.IosOverlayManager.show('anuncios');
-        }
+    // Se estiver em retry, não faz nada (evita conflito)
+    if (window._isRetrying) {
+        console.log('[pageshow] Ignorado porque _isRetrying está ativo');
+        return;
     }
+    if (pageshowRunning) return;
+    pageshowRunning = true;
 
-    function finalizarCarga() {
-        try { inicializarArialProdutos(); } catch (e) { console.error('Falha ao renderizar o carrossel (pageshow):', e); }
-        try { renderizarFiltros(); } catch (e) { console.error('Falha ao renderizar as categorias (pageshow):', e); }
-
-        try {
-            const domCacheAtual = sessionStorage.getItem('pedeai_dom_cache');
-            const gridAtual = document.getElementById('grid-produtos');
-            if (!domCacheAtual || !gridAtual || gridAtual.innerHTML.trim() === '') {
-                renderizarProdutos();
-            } else {
-                gridAtual.querySelectorAll('video').forEach(video => {
-                    const fonte = video.getAttribute('src') || video.getAttribute('data-src');
-                    if (fonte) {
-                        video.setAttribute('src', fonte);
-                        video.removeAttribute('data-src');
-                    }
-                });
-            }
-            iniciarObservadorDeVideos({ pausarAntes: false });
-        } catch (e) {
-            console.error('Falha ao renderizar os produtos (pageshow):', e);
-        }
-
-        garantirRenderizacaoValida();
-
-        setTimeout(() => {
+    try {
+        const modoSalvo = sessionStorage.getItem('pedeai_mode') || 'products';
+        if (modoSalvo === 'classifieds') {
             if (window.IosOverlayManager) {
-                window.IosOverlayManager.hideAll();
+                window.IosOverlayManager.show('anuncios');
             }
-        }, 450);
-    }
+            return;
+        }
 
-    if (todosProdutos.length > 0) {
-        finalizarCarga();
-    } else {
-        const aguardar = setInterval(() => {
-            if (todosProdutos.length > 0) {
-                clearInterval(aguardar);
-                finalizarCarga();
-            }
-        }, 50);
+        if (!(event.persisted || window.performance.navigation.type === 2)) {
+            return;
+        }
+
+        // Função para finalizar carga com debounce
+        let finalizarCargaTimeout = null;
+        const finalizarCarga = () => {
+            if (finalizarCargaTimeout) clearTimeout(finalizarCargaTimeout);
+            finalizarCargaTimeout = setTimeout(() => {
+                try { inicializarArialProdutos(); } catch (e) { console.error('Falha carrossel (pageshow):', e); }
+                try { renderizarFiltros(); } catch (e) { console.error('Falha filtros (pageshow):', e); }
+                try {
+                    const domCacheAtual = sessionStorage.getItem('pedeai_dom_cache');
+                    const gridAtual = document.getElementById('grid-produtos');
+                    if (!domCacheAtual || !gridAtual || gridAtual.innerHTML.trim() === '') {
+                        renderizarProdutos();
+                    } else {
+                        gridAtual.querySelectorAll('video').forEach(video => {
+                            const fonte = video.getAttribute('src') || video.getAttribute('data-src');
+                            if (fonte) {
+                                video.setAttribute('src', fonte);
+                                video.removeAttribute('data-src');
+                            }
+                        });
+                    }
+                    iniciarObservadorDeVideos({ pausarAntes: false });
+                } catch (e) { console.error('Falha produtos (pageshow):', e); }
+                garantirRenderizacaoValida();
+                if (window.IosOverlayManager) {
+                    setTimeout(() => window.IosOverlayManager.hideAll(), 450);
+                }
+            }, 100);
+        };
+
+        if (todosProdutos.length > 0) {
+            finalizarCarga();
+        } else {
+            const aguardar = setInterval(() => {
+                if (todosProdutos.length > 0) {
+                    clearInterval(aguardar);
+                    finalizarCarga();
+                }
+            }, 50);
+        }
+    } finally {
+        // Libera a flag após um tempo para não bloquear futuros events
+        setTimeout(() => { pageshowRunning = false; }, 500);
     }
 });

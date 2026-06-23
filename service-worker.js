@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pedeai-v38';
+const CACHE_NAME = 'pedeai-v39';
 const FILES_TO_CACHE = [
   'index.html',
   'manifest.json',
@@ -29,40 +29,67 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Fetch - Estratégia Network First para documentos e scripts para evitar travas no carregamento
+// Fetch - Estratégia Network First com validação de versão
 self.addEventListener('fetch', (e) => {
+  const url = new URL(e.request.url);
+
+  // Para scripts e documentos, sempre buscar da rede primeiro e validar
   if (e.request.mode === 'navigate' || e.request.destination === 'script') {
     e.respondWith(
-      fetch(e.request).then(response => {
-        const responseClone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(e.request, responseClone));
-        return response;
-      }).catch(() => caches.match(e.request))
+      fetch(e.request, { cache: 'no-store' }) // ignora cache HTTP
+        .then(response => {
+          // Atualiza o cache em segundo plano
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(e.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(e.request))
     );
-  } else {
-    // Vídeos: nunca interceptar — deixar o navegador gerenciar Range Requests nativamente
-    if (e.request.destination === 'video') {
-      return;
-    }
+    return;
+  }
 
-    e.respondWith(
-  caches.match(e.request).then(async (resp) => {
-    if (resp) return resp;
+  // Vídeos: nunca interceptar
+  if (e.request.destination === 'video') {
+    return;
+  }
 
-    const response = await fetch(e.request);
+  e.respondWith(
+    caches.match(e.request).then(async (resp) => {
+      if (resp) return resp;
 
-    // Salva apenas IMAGENS do Cloudinary — vídeos são excluídos
-    // porque Range Requests de vídeo são incompatíveis com Cache API
-    if (
-      e.request.url.includes('res.cloudinary.com') &&
-      e.request.destination === 'image'
-    ) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(e.request, response.clone());
-    }
+      const response = await fetch(e.request);
+      // Salva apenas imagens do Cloudinary
+      if (
+        url.hostname.includes('res.cloudinary.com') &&
+        e.request.destination === 'image'
+      ) {
+        const cache = await caches.open(CACHE_NAME);
+        cache.put(e.request, response.clone());
+      }
+      return response;
+    })
+  );
+});
 
-    return response;
-  })
-);
+// Força a ativação da nova versão e notifica os clients
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.map(k => {
+          if (k !== CACHE_NAME) {
+            console.log('[SW] Removendo cache antigo:', k);
+            return caches.delete(k);
+          }
+        })
+      )
+    ).then(() => self.clients.claim())
+  );
+});
+
+// Recebe mensagem do client para forçar recarga
+self.addEventListener('message', (event) => {
+  if (event.data === 'skipWaiting') {
+    self.skipWaiting();
   }
 });

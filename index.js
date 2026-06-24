@@ -183,6 +183,7 @@ function inicializar(opts = {}) {
     
     if (forceReset) {
         currentInitSequence++; // Incrementa para ignorar retornos de chamadas antigas
+        window._backupProdutos = todosProdutos.length > 0 ? [...todosProdutos] : null;
         todosProdutos = [];
         sessionStorage.removeItem('todosProdutosCache');
         sessionStorage.removeItem('pedeai_dom_cache');
@@ -285,7 +286,7 @@ async function inicializarInterno(sequenceId) {
               getDocs(collection(db, "produtos")),
               getDocs(collection(db, "usuarios"))
             ]),
-            timeoutFirestore(10000)
+            timeoutFirestore(25000)
           ]);
           
           if (currentInitSequence !== sequenceId) {
@@ -406,7 +407,11 @@ async function inicializarInterno(sequenceId) {
         clearTimeout(splashFallbackTimer);
         removerSplash();
         window.IosOverlayManager?.hideAll();
-        if (todosProdutos.length === 0) {
+        if (todosProdutos.length === 0 && window._backupProdutos && window._backupProdutos.length > 0) {
+          todosProdutos = window._backupProdutos;
+          window._backupProdutos = null;
+          garantirRenderizacaoValida();
+        } else if (todosProdutos.length === 0) {
           mostrarEstadoOffline();
         } else {
           garantirRenderizacaoValida();
@@ -1146,7 +1151,7 @@ window.__tentarNovamente = async function() {
     }
 };
 
-function garantirRenderizacaoValida() {
+function garantizarRenderizacaoValida() {
     const grid = document.getElementById('grid-produtos');
     const chips = document.getElementById('chipContainer');
     const track = document.getElementById('carouselTrack');

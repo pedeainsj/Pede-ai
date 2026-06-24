@@ -1183,7 +1183,7 @@ window.addEventListener('pageshow', (event) => {
         const modoSalvo = sessionStorage.getItem('pedeai_mode') || 'products';
         if (modoSalvo === 'classifieds') {
             if (window.IosOverlayManager) {
-                window.IosOverlayManager.show('anuncios');
+                setTimeout(() => window.IosOverlayManager.hideAll(), 450);
             }
             return;
         }

@@ -1151,7 +1151,7 @@ window.__tentarNovamente = async function() {
     }
 };
 
-function garantizarRenderizacaoValida() {
+function garantirRenderizacaoValida() {
     const grid = document.getElementById('grid-produtos');
     const chips = document.getElementById('chipContainer');
     const track = document.getElementById('carouselTrack');

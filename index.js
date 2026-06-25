@@ -83,7 +83,7 @@ function renderizarMediaCard(produto, modo) {
     } else {
         const imgUrl = produto.foto || (produto.fotos && produto.fotos[0]) || "https://via.placeholder.com/300";
         const imgOptimized = otimizarURL(imgUrl, 400);
-        return `<img src="${imgOptimized}" loading="lazy" style="width: 100%; height: 230px; background: #fcfcfc; padding: 4px; border-radius: 14px 14px 0 0; display: block; transition: 0.2s; object-fit: cover;">`;
+        return `<img src="${imgOptimized}" loading="lazy" style="width: 100%; height: 100%; background: #fcfcfc; display: block; transition: 0.2s; object-fit: contain; object-position: center;">`;
     }
 }
 
@@ -616,14 +616,14 @@ async function renderizarProdutos(opcoes = {}) {
 
         const menuDenuncia = `
             <div class="report-menu-container" onclick="event.stopPropagation()">
-                <button class="btn-report-trigger" onclick="window.toggleReportMenu('${p.id}')">
-                    <i class="fas fa-ellipsis-v"></i>
+                <button class="btn-report-trigger"
+                    data-produto-id="${p.id}"
+                    data-produto-nome="${nomeSanitizado}"
+                    data-produto-owner="${p.owner}"
+                    data-produto-loja="${p.nomeLoja.replace(/"/g, '&quot;')}"
+                    onclick="window.toggleReportMenu(this)">
+                    <i class="fas fa-ellipsis"></i>
                 </button>
-                <div id="report-dropdown-${p.id}" class="report-dropdown">
-                    <div class="report-item" onclick="window.abrirDenuncia('${p.id}', '${nomeSanitizado}', '${p.owner}', '${p.nomeLoja.replace(/'/g, "\\'")}')">
-                        <i class="fas fa-flag"></i> Denunciar produto
-                    </div>
-                </div>
             </div>`;
 
         let innerHTML = '';
@@ -639,7 +639,6 @@ async function renderizarProdutos(opcoes = {}) {
                         <div class="p-price" style="color:#0077ff;">R$ ${p.preco}</div>
                         ${menuDenuncia}
                     </div>
-                    <button class="btn-add-main">Ver anúncio</button>
                 </div>`;
             card.className = 'product-card';
         } else if (modoAtual === 'restaurants') {
@@ -663,9 +662,6 @@ async function renderizarProdutos(opcoes = {}) {
         } else {
             const isRoupa = p.tipoProduto === 'roupa';
             const temTamanhos = (p.tamanhosDisponiveis && p.tamanhosDisponiveis.length > 0) || (p.numeracoes && p.numeracoes.trim() !== "");
-            const btnHTML = (isRoupa && temTamanhos) ?
-                `<button class="btn-add-main">Escolher opções</button>` :
-                `<button class="btn-add-main" onclick="event.preventDefault(); event.stopPropagation(); window.adicionarAoCarrinho('${p.id}', '${nomeSanitizado}', '${p.preco}', '${p.owner}', '${p.whatsapp}', '${imgRaw}', '${linkProduto}', '${descSanitizada}')">Adicionar</button>`;
             innerHTML = `
                 <div class="img-box">
                     ${renderizarMediaCard(p, modoAtual)}
@@ -677,7 +673,6 @@ async function renderizarProdutos(opcoes = {}) {
                         <div class="p-price">R$ ${p.preco}</div>
                         ${menuDenuncia}
                     </div>
-                    ${btnHTML}
                 </div>`;
             card.className = 'product-card';
         }
@@ -858,17 +853,60 @@ document.querySelectorAll('button, .filter-chip, .nav-item').forEach(el => {
     }, {passive: false});
 });
 
-window.toggleReportMenu = (id) => {
-    document.querySelectorAll('.report-dropdown').forEach(el => {
-        if(el.id !== `report-dropdown-${id}`) el.classList.remove('show');
-    });
-    const menu = document.getElementById(`report-dropdown-${id}`);
-    if(menu) menu.classList.toggle('show');
+window.toggleReportMenu = (btn) => {
+    // Se já existe um popup de denúncia aberto, fecha (toggle) em vez de abrir outro
+    const popupExistente = document.getElementById('report-popup-overlay');
+    if (popupExistente) {
+        popupExistente.remove();
+        return;
+    }
+
+    const card = btn.closest('.product-card, .gourmet-card');
+    const imgBox = card ? card.querySelector('.img-box, .gourmet-img-box') : null;
+    const alvoVisual = imgBox || card || btn;
+    const rect = alvoVisual.getBoundingClientRect();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'report-popup-overlay';
+    overlay.className = 'report-popup-overlay show';
+    overlay.onclick = () => overlay.remove();
+
+    const popup = document.createElement('div');
+    popup.className = 'report-popup-card';
+    popup.onclick = (e) => e.stopPropagation();
+    popup.innerHTML = `
+        <div class="report-item" id="report-popup-denunciar">
+            <i class="fas fa-flag"></i> Denunciar produto
+        </div>`;
+
+    overlay.appendChild(popup);
+    document.body.appendChild(overlay);
+
+    // Centraliza o popup exatamente sobre a imagem do produto clicado
+    const popupRect = popup.getBoundingClientRect();
+    let left = rect.left + (rect.width / 2) - (popupRect.width / 2);
+    let top = rect.top + (rect.height / 2) - (popupRect.height / 2);
+    const margem = 12;
+    if (left < margem) left = margem;
+    if (left + popupRect.width > window.innerWidth - margem) left = window.innerWidth - popupRect.width - margem;
+    if (top < margem) top = margem;
+    if (top + popupRect.height > window.innerHeight - margem) top = window.innerHeight - popupRect.height - margem;
+    popup.style.position = 'fixed';
+    popup.style.left = `${left}px`;
+    popup.style.top = `${top}px`;
+
+    document.getElementById('report-popup-denunciar').onclick = () => {
+        overlay.remove();
+        window.abrirDenuncia(
+            btn.dataset.produtoId,
+            btn.dataset.produtoNome,
+            btn.dataset.produtoOwner,
+            btn.dataset.produtoLoja
+        );
+    };
 };
 
 window.abrirDenuncia = (id, nome, lojistaId, nomeLoja) => {
-    document.querySelectorAll('.report-dropdown').forEach(el => el.classList.remove('show'));
-
     const modalDenuncia = document.createElement('div');
     modalDenuncia.id = 'ios-report-modal';
     modalDenuncia.style = `

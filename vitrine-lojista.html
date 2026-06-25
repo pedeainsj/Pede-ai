@@ -10,12 +10,9 @@
         :root { --orange: #ee4d2d; --bg: #f2f2f2; --ifood-red: #ea1d2c; --gourmet-dark: #2d2d2d; }
         * { box-sizing: border-box; }
         body { margin: 0; background-color: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; overflow-x: hidden; -webkit-font-smoothing: antialiased; }
-<<<<<<< HEAD
-        header { background: #fff; padding: 0 14px; display: flex; align-items: center; position: sticky; top: 0; z-index: 1000; height: 52px; border-bottom: 1px solid #ececec; box-shadow: 0 1px 6px rgba(0,0,0,0.04); }
-=======
-        header { background: #fff; padding: calc(env(safe-area-inset-top, 0px)) 14px 0; display: flex; align-items: center; position: sticky; top: 0; z-index: 1000; height: calc(52px + env(safe-area-inset-top, 0px)); border-bottom: 1px solid #ececec; box-shadow: 0 1px 6px rgba(0,0,0,0.04); }
->>>>>>> 96937bb (sync project)
-        .back-btn { color: #222; font-size: 18px; text-decoration: none; margin-right: 14px; display: flex; align-items: center; }
+header { background: #fff; padding: calc(env(safe-area-inset-top, 0px)) 14px 0; display: flex; align-items: center; position: sticky; top: 0; z-index: 1000; height: calc(58px + env(safe-area-inset-top, 0px)); border-bottom: 1px solid #ececec; box-shadow: 0 1px 6px rgba(0,0,0,0.04); }
+        .back-btn { color: #222; font-size: 20px; text-decoration: none; margin-right: 14px; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background: #f2f2f2; flex-shrink: 0; transition: opacity 0.15s; }
+        .back-btn:active { opacity: 0.6; }
         #productDetail { min-height: 100vh; padding-bottom: 80px; }
 
         body.gourmet-mode { background: #fff; }

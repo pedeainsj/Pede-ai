@@ -73,25 +73,30 @@ export async function carregarVitrineCompleta() {
                     header.innerHTML = `
 <div style="display: flex; align-items: center; width: 100%; justify-content: space-between; padding: 0 5px;">
 
-    <div style="display: flex; align-items: center;">
-        <a href="javascript:void(0)" class="back-btn" style="text-decoration:none; color:#222;" onclick="history.back(); return false;">
+    <div style="display: flex; align-items: center; min-width: 0;">
+        <a href="javascript:void(0)" class="back-btn" onclick="history.back(); return false;">
     <i class="fas fa-arrow-left"></i>
 </a>
 
-        <div style="display: flex; flex-direction: column;">
-            <span style="font-weight: 700; font-size: 14px; color:#111;">
-                ${nomeParaExibir}
-            </span>
+        <img 
+            src="${otimizarURL(fotoParaExibir, 100)}"
+            style="
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                object-fit: cover;
+                border: 2px solid #ee4d2d;
+                box-shadow: 0 2px 8px rgba(238,77,45,0.18);
+                flex-shrink: 0;
+                margin-right: 10px;
+            ">
 
-            <span style="font-size: 11px; color:#888;">
-                ${modo === 'gourmet' ? 'Cardápio Digital' : 'Loja Oficial'}
-            </span>
-        </div>
+        <span style="font-weight: 700; font-size: 14px; color:#111; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            ${nomeParaExibir}
+        </span>
     </div>
 
-    <div style="display:flex; align-items:center; gap:10px;">
-
-        <button 
+    <button 
     onclick="window.abrirModalDenuncia('${sellerId}', '${nomeParaExibir}')"
     style="
         border: 1px solid #e8e8e8;
@@ -106,21 +111,10 @@ export async function carregarVitrineCompleta() {
         color: #aaa;
         font-size: 13px;
         transition: all 0.2s;
+        flex-shrink: 0;
     ">
     <i class="fas fa-ellipsis-v"></i>
 </button>
-
-        <img 
-            src="${otimizarURL(fotoParaExibir, 100)}"
-            style="
-                width: 38px;
-                height: 38px;
-                border-radius: 50%;
-                object-fit: cover;
-                border: 2px solid #ee4d2d;
-                box-shadow: 0 2px 8px rgba(238,77,45,0.18);
-            ">
-    </div>
 
 </div>`;
                 }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pedeai-v52';
+const CACHE_NAME = 'pedeai-v53';
 const FILES_TO_CACHE = [
   'index.html',
   'manifest.json',
@@ -25,10 +25,12 @@ async function limitarTamanhoCache(cacheName, maxItens) {
 
   // Remove as entradas mais antigas (as primeiras adicionadas) até
   // voltar ao limite. cache.keys() preserva a ordem de inserção.
+  // Deleções em paralelo (em vez de uma por vez com await sequencial)
+  // para que a limpeza termine rápido e não fique competindo por tempo
+  // de execução com as próximas requisições de imagem.
   const excedente = chaves.length - maxItens;
-  for (let i = 0; i < excedente; i++) {
-    await cache.delete(chaves[i]);
-  }
+  const chavesParaRemover = chaves.slice(0, excedente);
+  await Promise.all(chavesParaRemover.map(chave => cache.delete(chave)));
 }
 
 // Instala
@@ -91,10 +93,11 @@ self.addEventListener('fetch', (e) => {
       ) {
         const cache = await caches.open(CACHE_NAME);
         cache.put(e.request, response.clone());
-        // Mantém o cache de imagens dentro de um limite saudável,
-        // evitando a degradação de performance do Cache Storage que
-        // ocorre conforme o número de entradas cresce sem controle.
-        limitarTamanhoCache(CACHE_NAME, MAX_IMAGENS_CACHE);
+        // Registrado via waitUntil para garantir que o Service Worker não
+        // seja suspenso antes da limpeza terminar (sem isso, a limpeza podia
+        // ser interrompida no meio, deixando o cache crescer mesmo com o
+        // limite definido). Roda independente da resposta já entregue.
+        e.waitUntil(limitarTamanhoCache(CACHE_NAME, MAX_IMAGENS_CACHE));
       }
       return response;
     })

@@ -1,5 +1,5 @@
 import { db, GetRegrasLojista, APP_URL } from './config.js';
-import {doc, getDoc, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {doc, getDoc, collection, getDocs, addDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let itemAtualConfig = null;
 let lojistaInfoCache = null;
@@ -84,6 +84,11 @@ export async function carregarVitrineCompleta() {
         let regrasLojista = { podeExibirProdutos: true };
 
         if (sellerId) {
+            // Dispara a consulta de produtos do lojista em paralelo com a
+            // consulta dos dados do lojista, em vez de esperar uma terminar
+            // para começar a outra — elimina uma viagem de rede inteira da
+            // cadeia sequencial de carregamento.
+            const produtosPromise = getDocs(query(collection(db, "produtos"), where("owner", "==", sellerId)));
             const s = await getDoc(doc(db, "usuarios", sellerId));
             if (s.exists()) {
                 lojistaInfo = s.data();
@@ -154,15 +159,20 @@ export async function carregarVitrineCompleta() {
             } else { return; }
         }
 
-        const snap = await getDocs(collection(db, "produtos"));
+        // Aguarda a consulta de produtos que já foi disparada em paralelo
+        // logo acima — na maioria das vezes já está resolvida nesse ponto.
+        const snap = await produtosPromise;
         let htmlDestaque = "";
         let htmlGridLojista = "";
         let categoriaAtiva = "";
         let imagemCapaProdutoAtivo = "";
 
-        const docPrincipal = await getDoc(doc(db, "produtos", activeProductId));
-        if (docPrincipal.exists()) {
-            categoriaAtiva = docPrincipal.data().categoria;
+        // O produto ativo já está dentro de `snap` (é um produto deste lojista),
+        // então localizamos a categoria nele mesmo em vez de fazer uma nova
+        // consulta ao Firestore só para isso.
+        const docPrincipalSnap = snap.docs.find(d => d.id === activeProductId);
+        if (docPrincipalSnap) {
+            categoriaAtiva = docPrincipalSnap.data().categoria;
         }
 
         snap.forEach(d => {

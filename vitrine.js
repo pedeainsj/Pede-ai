@@ -83,12 +83,16 @@ export async function carregarVitrineCompleta() {
         let lojistaInfo = { nomeLoja: "Loja", fotoPerfil: "" };
         let regrasLojista = { podeExibirProdutos: true };
 
+        // Declarada aqui fora (não dentro do `if`) para continuar acessível
+        // mais abaixo, onde a consulta é de fato aguardada (`await produtosPromise`).
+        let produtosPromise = null;
+
         if (sellerId) {
             // Dispara a consulta de produtos do lojista em paralelo com a
             // consulta dos dados do lojista, em vez de esperar uma terminar
             // para começar a outra — elimina uma viagem de rede inteira da
             // cadeia sequencial de carregamento.
-            const produtosPromise = getDocs(query(collection(db, "produtos"), where("owner", "==", sellerId)));
+            produtosPromise = getDocs(collection(db, "produtos"));
             const s = await getDoc(doc(db, "usuarios", sellerId));
             if (s.exists()) {
                 lojistaInfo = s.data();
@@ -161,7 +165,9 @@ export async function carregarVitrineCompleta() {
 
         // Aguarda a consulta de produtos que já foi disparada em paralelo
         // logo acima — na maioria das vezes já está resolvida nesse ponto.
-        const snap = await produtosPromise;
+        // Se por algum motivo sellerId não veio na URL, produtosPromise nunca
+        // foi disparada — nesse caso busca agora, como rede de segurança.
+        const snap = produtosPromise ? await produtosPromise : await getDocs(collection(db, "produtos"));
         let htmlDestaque = "";
         let htmlGridLojista = "";
         let categoriaAtiva = "";

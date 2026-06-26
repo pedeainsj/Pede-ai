@@ -49,11 +49,12 @@ function esconderSkeletonVitrine() {
     mainContainer.classList.add('conteudo-pronto');
     skeleton.classList.add('skeleton-saindo');
 
-    requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-            skeleton.remove();
-        });
-    });
+    // Remove o skeleton diretamente — o display:block já foi aplicado acima,
+    // o skeleton apenas obstrui visualmente. Remoção síncrona garante que
+    // nenhum timer enfileirado no WKWebView possa atrasar ou descartar a operação.
+    if (skeleton.parentNode) {
+        skeleton.remove();
+    }
 }
 
 // Pré-carrega a imagem de capa antes de considerar a vitrine "pronta".
@@ -484,6 +485,14 @@ const funcAddConfig = adicionaisProduto.length > 0
                     </div>`;
             }
         });
+
+        // Desconecta o MutationObserver antes de atribuir o innerHTML,
+        // evitando dezenas de callbacks síncronos por nó inserido.
+        // Será reconectado pelo IIFE do HTML após o próximo carregamento.
+        if (window._vitrineVideoObserver) {
+            window._vitrineVideoObserver.disconnect();
+            window._vitrineVideoObserver = null;
+        }
 
         mainContainer.innerHTML = htmlDestaque + `
             <div style="padding: 16px 14px 24px;">

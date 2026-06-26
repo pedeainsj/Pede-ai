@@ -497,7 +497,17 @@ box-shadow:0 -5px 25px rgba(0,0,0,0.2);
     carregarVitrineCompleta();
 
     window.addEventListener('pageshow', (e) => {
-        if (!e.persisted) return;
+        // iOS descarta BFCache após ~25-30 navegações por pressão de memória.
+        // Quando isso acontece, e.persisted = false e a página recarrega do zero —
+        // mas carregarVitrineCompleta() NÃO é chamada novamente sem este bloco.
+        // A verificação abaixo garante recarga mesmo sem BFCache.
+        if (!e.persisted) {
+            const detail = document.getElementById('productDetail');
+            if (detail && detail.innerHTML.trim() === '') {
+                carregarVitrineCompleta();
+            }
+            return;
+        }
 
         // Skeleton foi removido do DOM pelo esconderSkeletonVitrine — reinserir antes de recarregar
         const detail = document.getElementById('productDetail');
@@ -632,39 +642,18 @@ box-shadow:0 -5px 25px rgba(0,0,0,0.2);
         }
         
         // Observa mudanças no DOM para novos vídeos
+        // Desconecta qualquer observer anterior antes de criar um novo
+        if (window._vitrineVideoObserver) {
+            window._vitrineVideoObserver.disconnect();
+            window._vitrineVideoObserver = null;
+        }
         const observer = new MutationObserver(() => initCustomVideoControls());
-        observer.observe(document.getElementById('productDetail'), { childList: true, subtree: true });
+        const productDetailEl = document.getElementById('productDetail');
+        if (productDetailEl) {
+            observer.observe(productDetailEl, { childList: true, subtree: true });
+            window._vitrineVideoObserver = observer;
+        }
         initCustomVideoControls();
-        // Garante que o ícone reflita o estado do autoplay
-                setTimeout(() => {
-                    updatePlayPauseIcon();
-                    // Botão de replay (quando o vídeo termina)
-                const replayOverlay = video.parentElement.querySelector('.replay-overlay');
-                const replayBtn = replayOverlay ? replayOverlay.querySelector('.replay-btn') : null;
-                
-                if (replayBtn) {
-                    video.addEventListener('ended', () => {
-                        replayOverlay.style.opacity = '1';
-                        replayOverlay.style.pointerEvents = 'auto';
-                    });
-                    
-                    replayBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        video.currentTime = 0;
-                        video.play().catch(console.log);
-                        replayOverlay.style.opacity = '0';
-                        replayOverlay.style.pointerEvents = 'none';
-                        updatePlayPauseIcon();
-                    });
-                    
-                    // Esconde o replay se o usuário tocar no vídeo enquanto ele está em exibição
-                    video.addEventListener('play', () => {
-                        replayOverlay.style.opacity = '0';
-                        replayOverlay.style.pointerEvents = 'none';
-                    });
-                }
-                    updateProgress();
-                }, 100);
     })();
 </script>
 

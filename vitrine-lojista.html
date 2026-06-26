@@ -495,6 +495,24 @@ box-shadow:0 -5px 25px rgba(0,0,0,0.2);
     }
 
     carregarVitrineCompleta();
+
+    window.addEventListener('pageshow', (e) => {
+        if (e.persisted) {
+            const detail = document.getElementById('productDetail');
+            const skeleton = document.getElementById('vitrineSkeleton');
+            if (detail) {
+                detail.style.display = 'none';
+                detail.innerHTML = '';
+                detail.classList.remove('conteudo-pronto');
+            }
+            if (skeleton) {
+                delete skeleton.dataset.removido;
+                skeleton.classList.remove('skeleton-saindo');
+                skeleton.style.opacity = '1';
+            }
+            carregarVitrineCompleta();
+        }
+    });
 </script>
 
     <script>

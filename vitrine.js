@@ -1,5 +1,5 @@
 import { db, GetRegrasLojista, APP_URL } from './config.js';
-import {doc, getDoc, collection, getDocs, addDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {doc, getDoc, collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 let itemAtualConfig = null;
 let lojistaInfoCache = null;
@@ -70,29 +70,25 @@ function preCarregarImagem(url) {
     });
 }
 
+let _vitrineCarregando = false;
+
 export async function carregarVitrineCompleta() {
+    if (_vitrineCarregando) return;
+    _vitrineCarregando = true;
+
     const params = new URLSearchParams(window.location.search);
     const sellerId = params.get('seller');
     const activeProductId = params.get('product'); 
     const modo = params.get('modo') || 'produto';
     const mainContainer = document.getElementById('productDetail');
 
-    if (!mainContainer) return;
+    if (!mainContainer) { _vitrineCarregando = false; return; }
 
     try {
         let lojistaInfo = { nomeLoja: "Loja", fotoPerfil: "" };
         let regrasLojista = { podeExibirProdutos: true };
 
-        // Declarada aqui fora (não dentro do `if`) para continuar acessível
-        // mais abaixo, onde a consulta é de fato aguardada (`await produtosPromise`).
-        let produtosPromise = null;
-
         if (sellerId) {
-            // Dispara a consulta de produtos do lojista em paralelo com a
-            // consulta dos dados do lojista, em vez de esperar uma terminar
-            // para começar a outra — elimina uma viagem de rede inteira da
-            // cadeia sequencial de carregamento.
-            produtosPromise = getDocs(collection(db, "produtos"));
             const s = await getDoc(doc(db, "usuarios", sellerId));
             if (s.exists()) {
                 lojistaInfo = s.data();
@@ -163,22 +159,23 @@ export async function carregarVitrineCompleta() {
             } else { return; }
         }
 
-        // Aguarda a consulta de produtos que já foi disparada em paralelo
-        // logo acima — na maioria das vezes já está resolvida nesse ponto.
-        // Se por algum motivo sellerId não veio na URL, produtosPromise nunca
-        // foi disparada — nesse caso busca agora, como rede de segurança.
-        const snap = produtosPromise ? await produtosPromise : await getDocs(collection(db, "produtos"));
+        const _firestoreTimeout = new Promise((_, rej) =>
+            setTimeout(() => rej(new Error('vitrine_timeout')), 10000)
+        );
+        const [snap, docPrincipal] = await Promise.race([
+            Promise.all([
+                getDocs(collection(db, "produtos")),
+                getDoc(doc(db, "produtos", activeProductId))
+            ]),
+            _firestoreTimeout
+        ]);
         let htmlDestaque = "";
         let htmlGridLojista = "";
         let categoriaAtiva = "";
         let imagemCapaProdutoAtivo = "";
 
-        // O produto ativo já está dentro de `snap` (é um produto deste lojista),
-        // então localizamos a categoria nele mesmo em vez de fazer uma nova
-        // consulta ao Firestore só para isso.
-        const docPrincipalSnap = snap.docs.find(d => d.id === activeProductId);
-        if (docPrincipalSnap) {
-            categoriaAtiva = docPrincipalSnap.data().categoria;
+        if (docPrincipal.exists()) {
+            categoriaAtiva = docPrincipal.data().categoria;
         }
 
         snap.forEach(d => {
@@ -630,6 +627,8 @@ const funcAddConfig = adicionaisProduto.length > 0
     } catch (error) {
         console.error("Erro ao carregar vitrine:", error);
         esconderSkeletonVitrine();
+    } finally {
+        _vitrineCarregando = false;
     }
 }
 

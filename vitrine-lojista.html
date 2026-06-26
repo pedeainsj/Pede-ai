@@ -497,21 +497,38 @@ box-shadow:0 -5px 25px rgba(0,0,0,0.2);
     carregarVitrineCompleta();
 
     window.addEventListener('pageshow', (e) => {
-        if (e.persisted) {
-            const detail = document.getElementById('productDetail');
-            const skeleton = document.getElementById('vitrineSkeleton');
-            if (detail) {
-                detail.style.display = 'none';
-                detail.innerHTML = '';
-                detail.classList.remove('conteudo-pronto');
-            }
-            if (skeleton) {
-                delete skeleton.dataset.removido;
-                skeleton.classList.remove('skeleton-saindo');
-                skeleton.style.opacity = '1';
-            }
-            carregarVitrineCompleta();
+        if (!e.persisted) return;
+
+        // Skeleton foi removido do DOM pelo esconderSkeletonVitrine — reinserir antes de recarregar
+        const detail = document.getElementById('productDetail');
+        if (detail) {
+            detail.innerHTML = '';
+            detail.style.display = 'none';
+            detail.classList.remove('conteudo-pronto');
         }
+
+        let skeleton = document.getElementById('vitrineSkeleton');
+        if (!skeleton) {
+            skeleton = document.createElement('div');
+            skeleton.id = 'vitrineSkeleton';
+            skeleton.innerHTML = `
+                <div class="skel-imagem skel-shimmer">
+                    <i class="fas fa-image"></i>
+                </div>
+                <div class="skel-linha media skel-shimmer"></div>
+                <div class="skel-linha curta skel-shimmer"></div>
+                <div class="skel-linha preco skel-shimmer"></div>
+            `;
+            if (detail && detail.parentNode) {
+                detail.parentNode.insertBefore(skeleton, detail);
+            }
+        } else {
+            delete skeleton.dataset.removido;
+            skeleton.classList.remove('skeleton-saindo');
+            skeleton.style.opacity = '1';
+        }
+
+        carregarVitrineCompleta();
     });
 </script>
 

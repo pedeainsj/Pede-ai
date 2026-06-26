@@ -70,19 +70,14 @@ function preCarregarImagem(url) {
     });
 }
 
-let _vitrineCarregando = false;
-
 export async function carregarVitrineCompleta() {
-    if (_vitrineCarregando) return;
-    _vitrineCarregando = true;
-
     const params = new URLSearchParams(window.location.search);
     const sellerId = params.get('seller');
     const activeProductId = params.get('product'); 
     const modo = params.get('modo') || 'produto';
     const mainContainer = document.getElementById('productDetail');
 
-    if (!mainContainer) { _vitrineCarregando = false; return; }
+    if (!mainContainer) return;
 
     try {
         let lojistaInfo = { nomeLoja: "Loja", fotoPerfil: "" };
@@ -627,8 +622,6 @@ const funcAddConfig = adicionaisProduto.length > 0
     } catch (error) {
         console.error("Erro ao carregar vitrine:", error);
         esconderSkeletonVitrine();
-    } finally {
-        _vitrineCarregando = false;
     }
 }
 

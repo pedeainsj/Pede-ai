@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pedeai-v51';
+const CACHE_NAME = 'pedeai-v52';
 const FILES_TO_CACHE = [
   'index.html',
   'manifest.json',
@@ -10,6 +10,26 @@ const FILES_TO_CACHE = [
   'overlay.js',
   'config.js'
 ];
+
+// Limite máximo de imagens guardadas no cache. Acima disso, as entradas
+// mais antigas são removidas (estratégia LRU simples) para evitar que o
+// Cache Storage cresça indefinidamente conforme o usuário navega entre
+// produtos — crescimento sem limite é a causa raiz da lentidão progressiva
+// observada após várias navegações.
+const MAX_IMAGENS_CACHE = 60;
+
+async function limitarTamanhoCache(cacheName, maxItens) {
+  const cache = await caches.open(cacheName);
+  const chaves = await cache.keys();
+  if (chaves.length <= maxItens) return;
+
+  // Remove as entradas mais antigas (as primeiras adicionadas) até
+  // voltar ao limite. cache.keys() preserva a ordem de inserção.
+  const excedente = chaves.length - maxItens;
+  for (let i = 0; i < excedente; i++) {
+    await cache.delete(chaves[i]);
+  }
+}
 
 // Instala
 self.addEventListener('install', (e) => {
@@ -23,10 +43,16 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.map(k => k !== CACHE_NAME && caches.delete(k)))
-    )
+      Promise.all(
+        keys.map(k => {
+          if (k !== CACHE_NAME) {
+            console.log('[SW] Removendo cache antigo:', k);
+            return caches.delete(k);
+          }
+        })
+      )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 // Fetch - Estratégia Network First com validação de versão
@@ -65,27 +91,17 @@ self.addEventListener('fetch', (e) => {
       ) {
         const cache = await caches.open(CACHE_NAME);
         cache.put(e.request, response.clone());
+        // Mantém o cache de imagens dentro de um limite saudável,
+        // evitando a degradação de performance do Cache Storage que
+        // ocorre conforme o número de entradas cresce sem controle.
+        limitarTamanhoCache(CACHE_NAME, MAX_IMAGENS_CACHE);
       }
       return response;
     })
   );
 });
 
-// Força a ativação da nova versão e notifica os clients
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.map(k => {
-          if (k !== CACHE_NAME) {
-            console.log('[SW] Removendo cache antigo:', k);
-            return caches.delete(k);
-          }
-        })
-      )
-    ).then(() => self.clients.claim())
-  );
-});
+
 
 // Recebe mensagem do client para forçar recarga
 self.addEventListener('message', (event) => {

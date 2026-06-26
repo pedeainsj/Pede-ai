@@ -15,6 +15,52 @@ header { background: #fff; padding: calc(env(safe-area-inset-top, 0px)) 14px 0; 
         .back-btn:active { opacity: 0.6; }
         #productDetail { min-height: 100vh; padding-bottom: 80px; }
 
+        /* SKELETON DE CARREGAMENTO DA VITRINE */
+        #vitrineSkeleton {
+            padding: 14px;
+            opacity: 1;
+            transition: opacity 0.25s ease;
+        }
+        #vitrineSkeleton.skeleton-saindo { opacity: 0; }
+        .skel-shimmer {
+            background: linear-gradient(90deg, #ececec 25%, #f5f5f5 37%, #ececec 63%);
+            background-size: 400% 100%;
+            animation: skel-shimmer 1.4s ease infinite;
+            border-radius: 12px;
+        }
+        @keyframes skel-shimmer {
+            0% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .skel-imagem {
+            width: 100%;
+            aspect-ratio: 1.1 / 1;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .skel-imagem i {
+            font-size: 38px;
+            color: #d8d8d8;
+            position: relative;
+            z-index: 1;
+        }
+        .skel-linha { height: 14px; margin-top: 14px; }
+        .skel-linha.curta { width: 55%; }
+        .skel-linha.preco { width: 30%; height: 18px; }
+        .skel-linha.media { width: 80%; }
+
+        #productDetail.conteudo-pronto {
+            animation: fadeInConteudo 0.35s ease;
+        }
+        @keyframes fadeInConteudo {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
         body.gourmet-mode { background: #fff; }
         body.gourmet-mode header { border-bottom: none; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         
@@ -219,7 +265,15 @@ header { background: #fff; padding: calc(env(safe-area-inset-top, 0px)) 14px 0; 
 
     <header id="main-header"></header>
 
-    <div id="productDetail"></div>
+    <div id="vitrineSkeleton">
+        <div class="skel-imagem skel-shimmer">
+            <i class="fas fa-image"></i>
+        </div>
+        <div class="skel-linha media skel-shimmer"></div>
+        <div class="skel-linha curta skel-shimmer"></div>
+        <div class="skel-linha preco skel-shimmer"></div>
+    </div>
+    <div id="productDetail" style="display:none;"></div>
 
     <div class="modal-overlay" id="overlayComida" onclick="fecharModalComida()"></div>
     <div id="modalComida">

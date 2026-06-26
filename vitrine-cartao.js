@@ -10,6 +10,37 @@ let itemAtualConfig = null;
 let lojistaInfoCache = null;
 window.tamanhoSelecionadoAtual = null;
 
+function esconderSkeletonCartao() {
+    const skeleton = document.getElementById('vitrineSkeletonCartao');
+    const mainContainer = document.getElementById('productDetail');
+    if (!skeleton || !mainContainer) return;
+    if (skeleton.dataset.removido) return;
+    skeleton.dataset.removido = 'true';
+
+    mainContainer.style.display = 'block';
+    mainContainer.classList.add('conteudo-pronto-cartao');
+    skeleton.classList.add('skeleton-saindo');
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            skeleton.remove();
+        });
+    });
+}
+
+// Pré-carrega a imagem de capa antes de revelar o conteúdo.
+// Resolve sempre (sucesso, erro ou timeout de 4s) para nunca travar o loading.
+function preCarregarImagemCartao(url) {
+    return new Promise((resolve) => {
+        if (!url) { resolve(); return; }
+        const img = new Image();
+        const timeout = setTimeout(resolve, 4000);
+        img.onload = () => { clearTimeout(timeout); resolve(); };
+        img.onerror = () => { clearTimeout(timeout); resolve(); };
+        img.src = url;
+    });
+}
+
 function otimizarURL(url, width = 400) {
     if (!url || typeof url !== 'string') {
         return "https://via.placeholder.com/300";
@@ -36,26 +67,40 @@ function gerarLinkDestaque(prodId) {
     return `${base}?seller=${lojistaId}&product=${prodId}&modo=${modo}`;
 }
 
-async function init() {
-    if (!lojistaId) return;
+async function init(tentativa = 0) {
+    if (!lojistaId) {
+        // Em alguns navegadores internos (ex: WebView do Instagram), a URL
+        // pode ainda não estar 100% disponível no primeiro instante de execução
+        // do módulo. Tenta novamente algumas vezes antes de desistir.
+        if (tentativa < 5) {
+            setTimeout(() => init(tentativa + 1), 200);
+            return;
+        }
+        esconderSkeletonCartao();
+        return;
+    }
     if (modo === 'gourmet') document.body.classList.add('gourmet-mode');
     await carregarDadosEProdutos();
 }
 
 async function carregarDadosEProdutos() {
     const mainContainer = document.getElementById('productDetail');
+    if (!mainContainer) { esconderSkeletonCartao(); return; }
     try {
         const userDoc = await getDoc(doc(db, "usuarios", lojistaId));
-        if (!userDoc.exists()) return;
+        if (!userDoc.exists()) { esconderSkeletonCartao(); return; }
 
         lojistaInfoCache = userDoc.data();
         lojistaInfoCache.id = lojistaId;
 
         const regras = GetRegrasLojista(lojistaInfoCache);
         if (!regras.podeExibirProdutos || regras.isBloqueado) {
-            document.getElementById('nomeLojista').innerText = "";
-            document.getElementById('fotoLojista').style.display = 'none';
-            mainContainer.innerHTML = "";
+            const nomeEl = document.getElementById('nomeLojista');
+            const fotoEl = document.getElementById('fotoLojista');
+            if (nomeEl) nomeEl.innerText = "";
+            if (fotoEl) fotoEl.style.display = 'none';
+            if (mainContainer) mainContainer.innerHTML = "";
+            esconderSkeletonCartao();
             return;
         }
 
@@ -68,6 +113,7 @@ async function carregarDadosEProdutos() {
         const snap = await getDocs(collection(db, "produtos"));
         let htmlDestaque = "";
         let htmlGridLojista = "";
+        let imagemCapaAtivaCartao = "";
 
         snap.forEach(d => {
             const p = d.data();
@@ -87,6 +133,7 @@ async function carregarDadosEProdutos() {
             window[adicionaisKey] = p.adicionais || [];
             
             if (d.id === activeProductId) {
+                imagemCapaAtivaCartao = imgCapa;
                 if (modo === 'gourmet') {
                     htmlDestaque = `
                         <div class="container-gourmet-destaque">
@@ -217,7 +264,15 @@ htmlGridLojista += `
 
         // Label "MAIS PRODUTOS" com classe dedicada para melhor estilo
         mainContainer.innerHTML = htmlDestaque + (htmlGridLojista ? `<div class="grid-label">${modo === 'gourmet' ? 'Mais do cardápio' : 'Mais produtos'}</div><div class="grid-produtos">${htmlGridLojista}</div>` : "");
-    } catch (e) { console.error(e); }
+
+        // Só revela o conteúdo após a imagem de capa carregar (ou falhar/expirar) —
+        // evita o "pop" de imagem e garante que o layout já está estável.
+        await preCarregarImagemCartao(imagemCapaAtivaCartao);
+        esconderSkeletonCartao();
+    } catch (e) {
+        console.error(e);
+        esconderSkeletonCartao();
+    }
 }
 
 window.selecionarTamanho = (btn, tamanho) => {

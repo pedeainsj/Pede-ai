@@ -38,6 +38,38 @@ function gerarLinkVitrine(sellerId, prodId, modo) {
     return `${base}?seller=${sellerId}&product=${prodId}&modo=${modo}`;
 }
 
+function esconderSkeletonVitrine() {
+    const skeleton = document.getElementById('vitrineSkeleton');
+    const mainContainer = document.getElementById('productDetail');
+    if (!skeleton || !mainContainer) return;
+    if (skeleton.dataset.removido) return;
+    skeleton.dataset.removido = 'true';
+
+    mainContainer.style.display = 'block';
+    mainContainer.classList.add('conteudo-pronto');
+    skeleton.classList.add('skeleton-saindo');
+
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            skeleton.remove();
+        });
+    });
+}
+
+// Pré-carrega a imagem de capa antes de considerar a vitrine "pronta".
+// Resolve sempre (sucesso ou erro) para nunca travar o loading indefinidamente,
+// e tem um teto de segurança de 4s para conexões muito lentas.
+function preCarregarImagem(url) {
+    return new Promise((resolve) => {
+        if (!url) { resolve(); return; }
+        const img = new Image();
+        const timeout = setTimeout(resolve, 4000);
+        img.onload = () => { clearTimeout(timeout); resolve(); };
+        img.onerror = () => { clearTimeout(timeout); resolve(); };
+        img.src = url;
+    });
+}
+
 export async function carregarVitrineCompleta() {
     const params = new URLSearchParams(window.location.search);
     const sellerId = params.get('seller');
@@ -126,6 +158,7 @@ export async function carregarVitrineCompleta() {
         let htmlDestaque = "";
         let htmlGridLojista = "";
         let categoriaAtiva = "";
+        let imagemCapaProdutoAtivo = "";
 
         const docPrincipal = await getDoc(doc(db, "produtos", activeProductId));
         if (docPrincipal.exists()) {
@@ -195,6 +228,7 @@ const funcAddConfig = adicionaisProduto.length > 0
             if (p.categoria !== categoriaAtiva) return;
 
             if (d.id === activeProductId) {
+                imagemCapaProdutoAtivo = imgCapaOtimizada;
                 if (modo === 'gourmet') {
                 // Monta array de mídias
                 let mediaItems = [];
@@ -454,6 +488,12 @@ const funcAddConfig = adicionaisProduto.length > 0
                 </div>
             </div>`;
 
+        // Só revela o conteúdo depois que a imagem de capa do produto
+        // realmente carregou (ou falhou/expirou) — elimina o "pop" de imagem
+        // e garante que nunca aparece layout parcial/instável.
+        await preCarregarImagem(imagemCapaProdutoAtivo);
+        esconderSkeletonVitrine();
+
         const slider = document.getElementById('slider-main');
         const counter = document.getElementById('counter');
         if (slider && counter) {
@@ -571,7 +611,10 @@ const funcAddConfig = adicionaisProduto.length > 0
             }
         });
 
-    } catch (error) { console.error("Erro ao carregar vitrine:", error); }
+    } catch (error) {
+        console.error("Erro ao carregar vitrine:", error);
+        esconderSkeletonVitrine();
+    }
 }
 
 window.selecionarTamanho = (btn, tamanho) => {

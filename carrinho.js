@@ -3,9 +3,37 @@ import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-
 
 const STORAGE_KEY = 'carrinho_pedeai';
 
+// ─── ACESSO SEGURO AO STORAGE ──────────────────────────────────────────────
+// Alguns navegadores internos (ex: WebView do Instagram/Facebook) podem lançar
+// exceção ao acessar localStorage (em vez de simplesmente retornar null),
+// dependendo do modo de privacidade ou política de cookies de terceiros.
+// Sem proteção, isso quebra silenciosamente toda a função que tentar usá-lo.
+// Aqui criamos um fallback em memória para a sessão atual, garantindo que o
+// carrinho continue funcionando mesmo se o localStorage estiver indisponível.
+window.__carrinhoFallbackMemoria = window.__carrinhoFallbackMemoria || null;
+
+function lerCarrinhoStorage() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+    } catch (e) {
+        console.warn('localStorage indisponível, usando carrinho em memória (sessão atual).', e);
+        return window.__carrinhoFallbackMemoria || [];
+    }
+}
+
+function salvarCarrinhoStorage(carrinho) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(carrinho));
+    } catch (e) {
+        console.warn('localStorage indisponível, mantendo carrinho em memória (sessão atual).', e);
+        window.__carrinhoFallbackMemoria = carrinho;
+    }
+}
+
 // 1. ADICIONAR AO CARRINHO (Ajustado para integridade total da descrição real)
 window.adicionarAoCarrinho = (id, nome, preco, owner, whatsapp, imagem, linkProduto, descricao = "") => {
-    let carrinho = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    let carrinho = lerCarrinhoStorage();
     
     // Reconstrói o link da vitrine caso venha vazio
     let linkFinal = linkProduto;
@@ -38,7 +66,7 @@ window.adicionarAoCarrinho = (id, nome, preco, owner, whatsapp, imagem, linkProd
         carrinho.push(item); 
     }
     
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(carrinho));
+    salvarCarrinhoStorage(carrinho);
     window.atualizarIconeCarrinho();
     
     window.__dispararFlyAnimation(imagem);
@@ -46,12 +74,12 @@ window.adicionarAoCarrinho = (id, nome, preco, owner, whatsapp, imagem, linkProd
 
 // 2. ALTERAR QUANTIDADE
 window.alterarQuantidadeCarrinho = (id, delta) => {
-    let carrinho = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    let carrinho = lerCarrinhoStorage();
     const index = carrinho.findIndex(i => i.id === id);
     if (index > -1) {
         carrinho[index].qtd += delta;
         if (carrinho[index].qtd <= 0) { carrinho.splice(index, 1); }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(carrinho));
+        salvarCarrinhoStorage(carrinho);
         window.atualizarIconeCarrinho();
         window.abrirModalCarrinho();
         // Atualiza badge da barra fixa da vitrine
@@ -70,16 +98,16 @@ window.alterarQuantidadeCarrinho = (id, delta) => {
 
 // 3. REMOVER ITEM
 window.removerDoCarrinho = (id) => {
-    let carrinho = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    let carrinho = lerCarrinhoStorage();
     carrinho = carrinho.filter(i => i.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(carrinho));
+    salvarCarrinhoStorage(carrinho);
     window.atualizarIconeCarrinho();
     window.abrirModalCarrinho();
 };
 
 // 4. FINALIZAR PEDIDO (ENVIO PARA WHATSAPP - FORMATO ATUALIZADO)
 window.finalizarGrupoLojista = async (ownerId) => {
-    let carrinho = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    let carrinho = lerCarrinhoStorage();
     const itensLoja = carrinho.filter(i => i.owner === ownerId);
     if (itensLoja.length === 0) return;
 
@@ -154,7 +182,7 @@ if (!foneFinal.startsWith('55')) {
     texto += `_Pedido gerado via catálogo online_\n*Pede Aí*`;
 
     const novoCarrinho = carrinho.filter(i => i.owner !== ownerId);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(novoCarrinho));
+    salvarCarrinhoStorage(novoCarrinho);
     
     window.atualizarIconeCarrinho();
     window.abrirModalCarrinho();
@@ -169,7 +197,7 @@ if (!foneFinal.startsWith('55')) {
 window.atualizarIconeCarrinho = () => {
     const flutuante = document.getElementById('carrinho-flutuante');
     const contador = document.getElementById('cart-count') || document.getElementById('carrinho-count');
-    const carrinho = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const carrinho = lerCarrinhoStorage();
     const totalItens = carrinho.reduce((acc, i) => acc + i.qtd, 0);
     
     if (flutuante) {
@@ -212,7 +240,7 @@ window.atualizarIconeCarrinho = () => {
 window.abrirModalCarrinho = () => {
     const modal = document.getElementById('modal-carrinho');
     const corpo = document.getElementById('lista-carrinho-lojas');
-    const carrinho = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+    const carrinho = lerCarrinhoStorage();
     
     if (carrinho.length === 0) { 
         if (corpo) {
@@ -252,15 +280,15 @@ window.abrirModalCarrinho = () => {
                                 <div class="cart-item-name">${i.nome}</div>
                                 <div class="cart-item-price">R$ ${i.preco}</div>
                                 <div class="qty-control-cart" style="display:flex; align-items:center; margin-top:5px; gap:10px;">
-                                    <button ontouchstart="alterarQuantidadeCarrinho('${i.id}', -1)" onclick="event.preventDefault();" class="qty-btn-cart">-</button>
+                                    <button ontouchstart="window.alterarQuantidadeCarrinho('${i.id}', -1)" onclick="event.preventDefault();" class="qty-btn-cart">-</button>
                                     <span style="font-size:13px; font-weight:bold;">${i.qtd}</span>
-                                    <button ontouchstart="alterarQuantidadeCarrinho('${i.id}', 1)" onclick="event.preventDefault();" class="qty-btn-cart">+</button>
+                                    <button ontouchstart="window.alterarQuantidadeCarrinho('${i.id}', 1)" onclick="event.preventDefault();" class="qty-btn-cart">+</button>
                                 </div>
                             </div>
-                            <i class="fas fa-trash-alt cart-remove" ontouchstart="removerDoCarrinho('${i.id}')" onclick="event.preventDefault();"></i>
+                            <i class="fas fa-trash-alt cart-remove" ontouchstart="window.removerDoCarrinho('${i.id}')" onclick="event.preventDefault();"></i>
                         </div>
                     `).join('')}
-                    <button class="btn-finish-store" onclick="finalizarGrupoLojista('${owner}')">
+                    <button class="btn-finish-store" onclick="window.finalizarGrupoLojista('${owner}')">
                         <i class="fab fa-whatsapp"></i> Enviar pelo WhatsApp
                     </button>
             <p style="font-size:14px;text-align:center;margin-top:8px;">

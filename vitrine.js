@@ -158,13 +158,33 @@ export async function carregarVitrineCompleta() {
         const _firestoreTimeout = new Promise((_, rej) =>
             setTimeout(() => rej(new Error('vitrine_timeout')), 10000)
         );
-        const [snap, docPrincipal] = await Promise.race([
-            Promise.all([
-                getDocs(collection(db, "produtos")),
-                getDoc(doc(db, "produtos", activeProductId))
-            ]),
-            _firestoreTimeout
-        ]);
+        let snap, docPrincipal;
+        try {
+            [snap, docPrincipal] = await Promise.race([
+                Promise.all([
+                    getDocs(collection(db, "produtos")),
+                    getDoc(doc(db, "produtos", activeProductId))
+                ]),
+                _firestoreTimeout
+            ]);
+        } catch (erroFirestore) {
+            // Antes, esse erro só era pego pelo catch externo, que limpava o
+            // skeleton e deixava #productDetail vazio (cinza) sem nenhuma
+            // tentativa nova — sintoma de "produto não renderiza" após muitas
+            // navegações, quando a conexão de rede do Firestore está saturada.
+            // Agora damos uma segunda chance, com timeout maior, antes de desistir.
+            console.warn('Primeira tentativa de carregar produtos falhou, tentando novamente:', erroFirestore);
+            const _retryTimeout = new Promise((_, rej) =>
+                setTimeout(() => rej(new Error('vitrine_timeout_retry')), 15000)
+            );
+            [snap, docPrincipal] = await Promise.race([
+                Promise.all([
+                    getDocs(collection(db, "produtos")),
+                    getDoc(doc(db, "produtos", activeProductId))
+                ]),
+                _retryTimeout
+            ]);
+        }
         let htmlDestaque = "";
         let htmlGridLojista = "";
         let categoriaAtiva = "";
@@ -631,6 +651,22 @@ const funcAddConfig = adicionaisProduto.length > 0
     } catch (error) {
         console.error("Erro ao carregar vitrine:", error);
         esconderSkeletonVitrine();
+
+        // Antes, ao cair aqui o #productDetail ficava vazio e cinza para sempre,
+        // sem nenhuma indicação visual de erro nem forma de tentar de novo —
+        // exatamente o sintoma relatado após muitas navegações (timeout do
+        // Firestore sob conexão saturada). Agora mostramos um estado de erro
+        // com botão de retry manual, em vez de tela cinza sem explicação.
+        const mainContainer = document.getElementById('productDetail');
+        if (mainContainer && mainContainer.innerHTML.trim() === '') {
+            mainContainer.style.display = 'block';
+            mainContainer.innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:64px 24px; text-align:center; min-height:300px;">
+                    <p style="font-size:18px; font-weight:700; color:#1c1c1e; margin:0 0 8px 0;">Não foi possível carregar o produto</p>
+                    <p style="font-size:14px; color:#8e8e93; margin:0 0 28px 0;">Verifique sua conexão e tente novamente</p>
+                    <button onclick="window.location.reload()" style="background:#ee4d2d; color:#fff; border:none; border-radius:14px; padding:14px 32px; font-size:15px; font-weight:600;">Recarregar</button>
+                </div>`;
+        }
     }
 }
 

@@ -14,6 +14,20 @@ const firebaseConfig = {
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 export const db = getFirestore(app);
 
+// Cada navegação para a vitrine cria uma página/processo JS novo, então o app
+// Firebase é reinicializado a cada vez — mas a conexão de rede (WebChannel)
+// que o Firestore abre nunca era fechada ao sair da página. Depois de muitas
+// navegações reais (não-SPA), essas conexões se acumulam e o WKWebView do iOS
+// passa a travar/atrasar drasticamente novas chamadas de rede — o que aparecia
+// como timeout silencioso na busca pesada de produtos da vitrine.
+// terminate() libera a conexão de rede do Firestore desta página assim que ela
+// for descartada, garantindo que a próxima navegação comece com canal limpo.
+if (typeof window !== 'undefined') {
+    window.addEventListener('pagehide', () => {
+        db.terminate().catch(() => {});
+    });
+}
+
 /**
  * DOMÍNIO PÚBLICO DO APP
  * Alterar aqui quando o domínio próprio estiver pronto.

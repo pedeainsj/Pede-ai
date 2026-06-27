@@ -107,7 +107,7 @@ export async function carregarVitrineCompleta() {
 <div style="display: flex; align-items: center; width: 100%; justify-content: space-between; padding: 0 5px;">
 
     <div style="display: flex; align-items: center; min-width: 0;">
-        <a href="javascript:void(0)" class="back-btn" onclick="history.back(); return false;">
+        <a href="javascript:void(0)" class="back-btn" onclick="window.location.replace('index.html'); return false;">
     <i class="fas fa-arrow-left"></i>
 </a>
 
@@ -529,6 +529,11 @@ const funcAddConfig = adicionaisProduto.length > 0
         // realmente carregou (ou falhou/expirou) — elimina o "pop" de imagem
         // e garante que nunca aparece layout parcial/instável.
         await preCarregarImagem(imagemCapaProdutoAtivo);
+        // Se a página foi suspensa pelo bfcache do iOS enquanto esta chamada
+        // ainda estava em voo, esta é uma execução "fantasma" de antes do
+        // swipe-back — não deve tocar no DOM da página restaurada, que já
+        // está sendo recarregada do zero pelo handler de pageshow.
+        if (window._vitrineSuspensa) return;
         esconderSkeletonVitrine();
 
         const slider = document.getElementById('slider-main');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'pedeai-v56';
+const CACHE_NAME = 'pedeai-v57';
 const FILES_TO_CACHE = [
   'index.html',
   'manifest.json',

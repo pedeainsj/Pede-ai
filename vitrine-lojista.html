@@ -496,11 +496,21 @@ box-shadow:0 -5px 25px rgba(0,0,0,0.2);
 
     carregarVitrineCompleta();
 
+    window.addEventListener('pagehide', () => {
+        // Marca a página como suspensa pelo bfcache do iOS. Qualquer chamada de
+        // carregarVitrineCompleta() ainda em voo (getDoc/getDocs pendentes) checa
+        // esta flag antes de tocar no DOM, evitando que uma promise "fantasma"
+        // de antes do swipe-back resolva sobre o estado da página restaurada.
+        window._vitrineSuspensa = true;
+    });
+
     window.addEventListener('pageshow', (e) => {
         // iOS descarta BFCache após ~25-30 navegações por pressão de memória.
         // Quando isso acontece, e.persisted = false e a página recarrega do zero —
         // mas carregarVitrineCompleta() NÃO é chamada novamente sem este bloco.
         // A verificação abaixo garante recarga mesmo sem BFCache.
+        window._vitrineSuspensa = false;
+
         if (!e.persisted) {
             const detail = document.getElementById('productDetail');
             if (detail && detail.innerHTML.trim() === '') {
@@ -509,7 +519,10 @@ box-shadow:0 -5px 25px rgba(0,0,0,0.2);
             return;
         }
 
-        // Skeleton foi removido do DOM pelo esconderSkeletonVitrine — reinserir antes de recarregar
+        // Restauração via BFCache (ex.: swipe back no iOS): força reset total do
+        // estado visual antes de recarregar, em vez de confiar no estado deixado
+        // pela página suspensa — é exatamente esse estado "preso" que causava o
+        // loading infinito ao voltar por gesto no iPhone.
         const detail = document.getElementById('productDetail');
         if (detail) {
             detail.innerHTML = '';

@@ -57,6 +57,21 @@ function esconderSkeletonVitrine() {
     }
 }
 
+// Responsabilidade única: limpar resíduo visual de skeleton ao restaurar a
+// página do bfcache (swipe back). NUNCA busca dados — o DOM restaurado já
+// contém o produto renderizado da visita anterior.
+export function restaurarEstadoVisualVitrine() {
+    const skeleton = document.getElementById('vitrineSkeleton');
+    const mainContainer = document.getElementById('productDetail');
+    if (skeleton && skeleton.parentNode) {
+        skeleton.remove();
+    }
+    if (mainContainer) {
+        mainContainer.style.display = 'block';
+        mainContainer.classList.add('conteudo-pronto');
+    }
+}
+
 // Pré-carrega a imagem de capa antes de considerar a vitrine "pronta".
 // Resolve sempre (sucesso ou erro) para nunca travar o loading indefinidamente,
 // e tem um teto de segurança de 4s para conexões muito lentas.
@@ -529,11 +544,6 @@ const funcAddConfig = adicionaisProduto.length > 0
         // realmente carregou (ou falhou/expirou) — elimina o "pop" de imagem
         // e garante que nunca aparece layout parcial/instável.
         await preCarregarImagem(imagemCapaProdutoAtivo);
-        // Se a página foi suspensa pelo bfcache do iOS enquanto esta chamada
-        // ainda estava em voo, esta é uma execução "fantasma" de antes do
-        // swipe-back — não deve tocar no DOM da página restaurada, que já
-        // está sendo recarregada do zero pelo handler de pageshow.
-        if (window._vitrineSuspensa) return;
         esconderSkeletonVitrine();
 
         const slider = document.getElementById('slider-main');
@@ -656,7 +666,7 @@ const funcAddConfig = adicionaisProduto.length > 0
     } catch (error) {
         console.error("Erro ao carregar vitrine:", error);
         esconderSkeletonVitrine();
-
+        
         // Antes, ao cair aqui o #productDetail ficava vazio e cinza para sempre,
         // sem nenhuma indicação visual de erro nem forma de tentar de novo —
         // exatamente o sintoma relatado após muitas navegações (timeout do

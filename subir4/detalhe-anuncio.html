@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Detalhes do Anúncio | Pede Aí</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --used-blue:   #0077ff;
+            --danger:      #ff3b30;
+            --bg-soft:     #f2f2f7;
+            --text-main:   #1c1c1e;
+            --text-sub:    #8e8e93;
+            --green-whats: #25D366;
+            --green-check: #34c759;
+            --radius-lg:   16px;
+            --radius-md:   12px;
+        }
+
+        /* ── Reset ───────────────────────────────────────────── */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+        * { touch-action: manipulation; }
+        html { -webkit-tap-highlight-color: transparent; }
+        body { background: #fff; color: var(--text-main); padding-bottom: 156px; }
+
+        /* ── Header ─────────────────────────────────────────── */
+        .header-nav {
+            position: sticky; top: 0;
+            background: rgba(255,255,255,0.94);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            z-index: 100;
+            display: flex; align-items: center;
+            padding: calc(14px + env(safe-area-inset-top, 0px)) 16px 14px;
+            border-bottom: 0.5px solid rgba(0,0,0,0.1);
+        }
+        .back-btn {
+            border: none; background: var(--bg-soft);
+            font-size: 15px; cursor: pointer; color: var(--used-blue);
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            transition: opacity 0.15s;
+        }
+        .back-btn:active { opacity: 0.55; }
+        .header-title { margin-left: 12px; font-weight: 600; font-size: 16px; flex: 1; }
+
+        /* ── Galeria ─────────────────────────────────────────── */
+        /*
+         * CORREÇÃO DE CORTE:
+         *   – object-fit: contain  → mostra o produto inteiro, sem cortar
+         *   – background: #f8f8f8  → fundo neutro onde a imagem não preenche
+         *   – touch-action: pan-x  → mantém swipe horizontal, bloqueia pinch
+         *   – Cloudinary: c_fill,g_auto → AI detecta assunto e centraliza o corte
+         */
+        .galeria-wrap {
+            position: relative;
+            background: #f8f8f8;
+            border-bottom: 0.5px solid #e5e5ea;
+        }
+        .galeria-carousel {
+            display: flex;
+            overflow-x: scroll;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            touch-action: pan-x;
+            overscroll-behavior-x: contain;
+        }
+        .galeria-carousel::-webkit-scrollbar { display: none; }
+        .galeria-slide {
+            flex: 0 0 100%;
+            scroll-snap-align: start;
+            height: calc(100svh - 260px);
+            max-height: 460px;
+            background: #f8f8f8;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+        }
+        .galeria-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+            pointer-events: none;
+        }
+        .galeria-vazia {
+            flex-direction: column; gap: 10px;
+            color: #c7c7cc; font-size: 13px;
+        }
+        .galeria-dots {
+            position: absolute; bottom: 10px; left: 0; right: 0;
+            display: flex; justify-content: center; align-items: center;
+            gap: 5px; pointer-events: none;
+        }
+        .dot {
+            width: 6px; height: 6px; border-radius: 3px;
+            background: rgba(0,0,0,0.2);
+            transition: width 0.25s ease, background 0.25s ease;
+        }
+        .dot.active { width: 18px; background: var(--used-blue); }
+
+        /* ── Price Block – PRIMEIRO destaque após galeria ────── */
+        .price-block {
+            padding: 20px 20px 0;
+        }
+        .price-tag {
+            font-size: 36px; font-weight: 800;
+            color: var(--used-blue);
+            letter-spacing: -1.5px; line-height: 1;
+        }
+        .price-tag.combinar {
+            font-size: 26px; font-weight: 700;
+            color: var(--text-sub); letter-spacing: -0.5px;
+        }
+        .price-tag.gratis {
+            color: var(--green-check);
+        }
+
+        /* ── Conteúdo ────────────────────────────────────────── */
+        .content { padding: 14px 20px 8px; }
+
+        .cat-badge {
+            display: inline-flex; align-items: center;
+            background: #e8f0fe; color: #0055cc;
+            font-size: 11px; font-weight: 700;
+            padding: 4px 10px; border-radius: 20px;
+            margin-bottom: 10px;
+            text-transform: uppercase; letter-spacing: 0.6px;
+        }
+
+        .title {
+            font-size: 20px; font-weight: 700;
+            line-height: 1.4; color: var(--text-main);
+            margin-bottom: 12px;
+        }
+
+        .meta-row {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 8px;
+        }
+        .meta-chip {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 12px; color: var(--text-sub); font-weight: 500;
+            background: var(--bg-soft);
+            padding: 5px 11px; border-radius: 20px;
+        }
+        .meta-chip i { font-size: 11px; }
+
+        .divider { height: 0.5px; background: #e5e5ea; margin: 20px 0; }
+
+        .section-title {
+            font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.8px;
+            color: var(--text-sub); margin-bottom: 12px;
+        }
+        .description {
+            font-size: 15px; line-height: 1.85;
+            color: #3a3a3c; white-space: pre-line;
+        }
+
+        /* ── Seller Card ─────────────────────────────────────── */
+        .seller-card {
+            display: flex; align-items: center; gap: 14px;
+            background: var(--bg-soft); border-radius: var(--radius-lg);
+            padding: 14px 16px;
+        }
+        .seller-avatar {
+            width: 46px; height: 46px; border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; font-size: 18px; color: #fff;
+        }
+        .seller-info { flex: 1; min-width: 0; }
+        .seller-name {
+            font-size: 15px; font-weight: 600; color: var(--text-main);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .seller-sub {
+            font-size: 12px; color: var(--text-sub);
+            margin-top: 2px; font-weight: 400;
+        }
+
+        /* ── Verified Pill – elegante, estilo iOS ─────────────── */
+        .verified-pill {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: rgba(52, 199, 89, 0.10);
+            border: 0.5px solid rgba(52, 199, 89, 0.35);
+            color: #28a348;
+            font-size: 11px; font-weight: 600;
+            padding: 3px 9px 3px 7px;
+            border-radius: 20px;
+            margin-top: 6px;
+            letter-spacing: 0.1px;
+        }
+        .verified-pill i { font-size: 10px; color: var(--green-check); }
+
+        /* ── Footer Action ───────────────────────────────────── */
+        .footer-action {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            padding: 12px 20px calc(env(safe-area-inset-bottom) + 12px);
+            background: rgba(255,255,255,0.97);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-top: 0.5px solid rgba(0,0,0,0.08);
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .footer-row { display: flex; gap: 10px; }
+
+        .btn-whatsapp {
+            flex: 1;
+            background: var(--green-whats); color: #fff; text-decoration: none;
+            display: flex; align-items: center; justify-content: center; gap: 9px;
+            height: 52px; border-radius: var(--radius-lg);
+            font-weight: 700; font-size: 15px; letter-spacing: -0.1px;
+            transition: opacity 0.15s, transform 0.15s;
+        }
+        .btn-whatsapp:active { opacity: 0.85; transform: scale(0.98); }
+
+        .btn-share {
+            background: var(--bg-soft); color: var(--text-main);
+            border: none; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            height: 52px; width: 52px; border-radius: var(--radius-lg);
+            flex-shrink: 0; font-size: 19px;
+            transition: opacity 0.15s, transform 0.15s;
+        }
+        .btn-share:active { opacity: 0.7; transform: scale(0.96); }
+
+        .footer-bottom { display: flex; justify-content: center; }
+
+        .btn-report {
+            background: none; border: none; color: var(--text-sub);
+            font-size: 12px; font-weight: 500; cursor: pointer;
+            padding: 4px 12px;
+            display: flex; align-items: center; gap: 6px;
+            transition: opacity 0.15s;
+        }
+        .btn-report i { font-size: 11px; color: var(--danger); }
+        .btn-report:active { opacity: 0.55; }
+
+        /* ── Toast ───────────────────────────────────────────── */
+        #toast {
+            position: fixed;
+            bottom: calc(env(safe-area-inset-bottom) + 168px);
+            left: 50%; transform: translateX(-50%) translateY(14px);
+            background: rgba(28,28,30,0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            color: #fff;
+            font-size: 14px; font-weight: 500;
+            padding: 11px 22px;
+            border-radius: 24px;
+            white-space: nowrap;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+            display: flex; align-items: center; gap: 8px;
+            transition: opacity 0.22s ease, transform 0.22s ease;
+        }
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        #toast i { font-size: 15px; }
+        #toast.toast-success i { color: #34c759; }
+        #toast.toast-error   i { color: var(--danger); }
+        #toast.toast-info    i { color: #0077ff; }
+
+        /* ── Modal Denúncia (bottom sheet) ───────────────────── */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 9000;
+            display: flex; align-items: flex-end;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+        .modal-sheet {
+            width: 100%;
+            background: #fff;
+            border-radius: 20px 20px 0 0;
+            padding-bottom: calc(env(safe-area-inset-bottom) + 20px);
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        .modal-overlay.open .modal-sheet { transform: translateY(0); }
+
+        .modal-handle {
+            width: 36px; height: 4px; border-radius: 2px;
+            background: #d1d1d6; margin: 12px auto 20px;
+        }
+        .modal-title {
+            font-size: 17px; font-weight: 700; text-align: center;
+            padding: 0 20px 16px;
+            border-bottom: 0.5px solid #e5e5ea;
+        }
+        .modal-body { padding: 20px; }
+        .modal-label {
+            font-size: 12px; font-weight: 700;
+            color: var(--text-sub); text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 10px;
+        }
+        .modal-textarea {
+            width: 100%; height: 100px;
+            background: var(--bg-soft); border: none;
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            font-size: 15px;
+            font-family: 'Inter', -apple-system, sans-serif;
+            color: var(--text-main); resize: none; outline: none; line-height: 1.5;
+        }
+        .modal-textarea:focus { box-shadow: 0 0 0 2px var(--used-blue); }
+        .modal-textarea::placeholder { color: #c7c7cc; }
+
+        .modal-actions {
+            padding: 12px 20px 0;
+            display: flex; flex-direction: column; gap: 10px;
+        }
+        .btn-modal-submit {
+            width: 100%; height: 52px;
+            background: var(--danger); color: #fff;
+            border: none; cursor: pointer;
+            border-radius: var(--radius-lg);
+            font-size: 16px; font-weight: 700;
+            transition: opacity 0.15s;
+        }
+        .btn-modal-submit:disabled { opacity: 0.6; }
+        .btn-modal-submit:not(:disabled):active { opacity: 0.85; }
+
+        .btn-modal-cancel {
+            width: 100%; height: 44px;
+            background: none; color: var(--text-sub);
+            border: none; cursor: pointer;
+            border-radius: var(--radius-lg);
+            font-size: 15px; font-weight: 500;
+            transition: opacity 0.15s;
+        }
+        .btn-modal-cancel:active { opacity: 0.55; }
+    </style>
+</head>
+<body>
+
+    <div class="header-nav">
+        <button class="back-btn" onclick="history.back()">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <span class="header-title">Detalhes</span>
+    </div>
+
+    <div id="detalheAnuncio">
+        <div style="text-align:center; padding:80px 20px;">
+            <i class="fas fa-circle-notch fa-spin" style="font-size:30px; color:#0077ff;"></i>
+        </div>
+    </div>
+
+    <!-- ── Footer fixo ───────────────────────────────────────── -->
+    <div class="footer-action">
+        <div class="footer-row">
+            <a id="linkWhatsapp" href="#" target="_blank" class="btn-whatsapp">
+                <i class="fab fa-whatsapp" style="font-size:20px;"></i> Falar com vendedor
+            </a>
+            <button id="btnCompartilhar" class="btn-share" title="Compartilhar">
+                <i class="fas fa-share-nodes"></i>
+            </button>
+        </div>
+        <div class="footer-bottom">
+            <button id="btnDenunciar" class="btn-report">
+                <i class="fas fa-flag"></i> Denunciar este anúncio
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Toast ─────────────────────────────────────────────── -->
+    <div id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMsg"></span>
+    </div>
+
+    <!-- ── Modal Denúncia ────────────────────────────────────── -->
+    <div class="modal-overlay" id="modalDenuncia">
+        <div class="modal-sheet">
+            <div class="modal-handle"></div>
+            <div class="modal-title">
+                <i class="fas fa-flag" style="color:var(--danger); margin-right:8px; font-size:15px;"></i>
+                Denunciar Anúncio
+            </div>
+            <div class="modal-body">
+                <div class="modal-label">Motivo da denúncia</div>
+                <textarea
+                    class="modal-textarea"
+                    id="txtMotivo"
+                    placeholder="Descreva o motivo da denúncia…"
+                    maxlength="300"
+                ></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-modal-submit" id="btnEnviarDenuncia">Enviar Denúncia</button>
+                <button class="btn-modal-cancel" id="btnCancelarDenuncia">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { db, APP_URL } from './config.js';
+        import { doc, getDoc, collection, addDoc, serverTimestamp }
+            from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const WHATSAPP_ADMIN = "5599999999999";
+
+        /* ════════════════════════════════════════════════════════
+           TOAST – substitui todos os alert() nativos
+        ════════════════════════════════════════════════════════ */
+        function showToast(msg, type = 'success') {
+            const toast  = document.getElementById('toast');
+            const msgEl  = document.getElementById('toastMsg');
+            const icon   = toast.querySelector('i');
+
+            const iconMap = {
+                success: 'fas fa-check-circle',
+                error:   'fas fa-times-circle',
+                info:    'fas fa-circle-info'
+            };
+            icon.className  = iconMap[type] || iconMap.info;
+            toast.className = `toast-${type}`;
+            msgEl.textContent = msg;
+
+            toast.classList.add('show');
+            clearTimeout(toast._timer);
+            toast._timer = setTimeout(() => toast.classList.remove('show'), 2800);
+        }
+
+        /* ════════════════════════════════════════════════════════
+           CLOUDINARY – c_fill,g_auto (AI detecta assunto)
+        ════════════════════════════════════════════════════════ */
+        function cloudThumb(url, w = 1200) {
+            if (!url || typeof url !== 'string') return '';
+            if (!url.includes('res.cloudinary.com')) return url;
+            if (url.includes('/upload/w_') || url.includes('/upload/c_') ||
+                url.includes('/upload/q_') || url.includes('/upload/f_')) return url;
+            return url.replace('/upload/', `/upload/w_${w},h_${w},c_fill,g_auto,q_auto,f_auto/`);
+        }
+
+        function escapeHtml(texto) {
+            if (!texto) return '';
+            return texto.replace(/[&<>]/g, m =>
+                m === '&' ? '&amp;' : m === '<' ? '&lt;' : '&gt;'
+            );
+        }
+
+        // Corte inteligente: portrait → contain, landscape/quadrada → cover
+        function ajustarFit(img) {
+            const ratio = img.naturalWidth / img.naturalHeight;
+            img.style.objectFit = ratio < 0.85 ? 'contain' : 'cover';
+        }
+
+        /* ════════════════════════════════════════════════════════
+           MODAL DENÚNCIA – substitui prompt() e alert()
+        ════════════════════════════════════════════════════════ */
+        const modalEl   = document.getElementById('modalDenuncia');
+        const txtMotivo = document.getElementById('txtMotivo');
+
+        function abrirModal() {
+            txtMotivo.value = '';
+            modalEl.classList.add('open');
+            setTimeout(() => txtMotivo.focus(), 350);
+        }
+        function fecharModal() {
+            modalEl.classList.remove('open');
+        }
+
+        document.getElementById('btnCancelarDenuncia').onclick = fecharModal;
+        modalEl.addEventListener('click', e => { if (e.target === modalEl) fecharModal(); });
+
+        /* ════════════════════════════════════════════════════════
+           CARREGAR ANÚNCIO
+        ════════════════════════════════════════════════════════ */
+        async function carregarDetalhes() {
+            const params = new URLSearchParams(window.location.search);
+            const id     = params.get("id");
+
+            if (!id) {
+                document.getElementById('detalheAnuncio').innerHTML =
+                    `<p style="padding:40px 20px; text-align:center; color:#8e8e93;">Anúncio não encontrado.</p>`;
+                return;
+            }
+
+            try {
+                const [docSnap, configSnap] = await Promise.all([
+                    getDoc(doc(db, "anuncios", id)),
+                    getDoc(doc(db, "configuracoes", "anuncios"))
+                ]);
+
+                if (!docSnap.exists()) {
+                    document.getElementById('detalheAnuncio').innerHTML =
+                        `<p style="padding:40px 20px; text-align:center; color:#8e8e93;">Anúncio não encontrado.</p>`;
+                    return;
+                }
+
+                const anuncio = { id: docSnap.id, ...docSnap.data() };
+
+                /* ── Preço ─────────────────────────────────────── */
+                const precoExibicao =
+                    (anuncio.categoria === 'Empregos' || anuncio.categoria === 'Serviços')
+                    && (!anuncio.preco || anuncio.preco == 0)
+                        ? "Combinar"
+                        : `R$ ${parseFloat(anuncio.preco || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+
+                const priceClass = precoExibicao === "Combinar" ? "price-tag combinar"
+                                 : precoExibicao === "Grátis"   ? "price-tag gratis"
+                                 : "price-tag";
+
+                /* ── Fotos ─────────────────────────────────────── */
+                const fotos = (anuncio.fotos && anuncio.fotos.length > 0)
+                    ? anuncio.fotos
+                    : (anuncio.foto ? [anuncio.foto] : []);
+
+                /* ── Data ──────────────────────────────────────── */
+                let dataAnuncio = '';
+                const rawDate = anuncio.createdAt || anuncio.dataCriacao || anuncio.data;
+                if (rawDate) {
+                    try {
+                        const d = rawDate.toDate ? rawDate.toDate() : new Date(rawDate);
+                        dataAnuncio = d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' });
+                    } catch (e) {}
+                }
+
+                /* ── Localização ───────────────────────────────── */
+                const localizacao = anuncio.cidade || anuncio.estado || anuncio.localizacao || anuncio.local || '';
+
+                /* ── Galeria ───────────────────────────────────── */
+                const galeriaSection = fotos.length > 0 ? `
+                    <div class="galeria-wrap">
+                        <div class="galeria-carousel" id="galeriaCarousel">
+                            ${fotos.map((f, idx) => `
+                                <div class="galeria-slide">
+                                    <img
+                                        src="${cloudThumb(f, 1200)}"
+                                        loading="${idx === 0 ? 'eager' : 'lazy'}"
+                                        alt="Foto ${idx + 1}"
+                                        >
+                                </div>
+                            `).join('')}
+                        </div>
+                        ${fotos.length > 1 ? `
+                        <div class="galeria-dots" id="galeriaDots">
+                            ${fotos.map((_, idx) =>
+                                `<div class="dot${idx === 0 ? ' active' : ''}"></div>`
+                            ).join('')}
+                        </div>` : ''}
+                    </div>
+                ` : `
+                    <div class="galeria-wrap">
+                        <div class="galeria-carousel">
+                            <div class="galeria-slide galeria-vazia">
+                                <i class="fas fa-image fa-2x"></i>
+                                <span>Sem imagem</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                const nomeVendedor = anuncio.nome || anuncio.nomeVendedor || anuncio.anuncianteNome || 'Anunciante';
+
+                /* ── Meta chips (localização + data) ───────────── */
+                const metaChips = [
+                    localizacao
+                        ? `<div class="meta-chip"><i class="fas fa-location-dot"></i> ${escapeHtml(localizacao)}</div>`
+                        : '',
+                    dataAnuncio
+                        ? `<div class="meta-chip"><i class="fas fa-clock"></i> ${dataAnuncio}</div>`
+                        : ''
+                ].filter(Boolean).join('');
+
+                /* ── HTML principal ────────────────────────────── */
+                /*
+                 * HIERARQUIA VISUAL:
+                 *   GALERIA → PREÇO → TÍTULO → LOCALIZAÇÃO/DATA → DESCRIÇÃO → ANUNCIANTE
+                 */
+                const html = `
+                    ${galeriaSection}
+
+                    <div class="price-block">
+                        <div class="${priceClass}">${precoExibicao}</div>
+                    </div>
+
+                    <div class="content">
+                        <div class="cat-badge">${escapeHtml(anuncio.categoria)}</div>
+                        <h1 class="title">${escapeHtml(anuncio.titulo)}</h1>
+                        ${metaChips ? `<div class="meta-row">${metaChips}</div>` : ''}
+
+                        <div class="divider"></div>
+
+                        <div class="section-title">Descrição</div>
+                        <div class="description">${escapeHtml(anuncio.descricao || 'Sem descrição detalhada.')}</div>
+
+                        <div class="divider"></div>
+
+                        <div class="section-title">Anunciante</div>
+                        <div class="seller-card">
+                            <div class="seller-avatar"><i class="fas fa-user"></i></div>
+                            <div class="seller-info">
+                                <div class="seller-name">${escapeHtml(nomeVendedor)}</div>
+                                <div class="seller-sub">Membro da plataforma</div>
+                                <div class="verified-pill">
+                                    <i class="fas fa-circle-check"></i>
+                                    Anunciante verificado
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('detalheAnuncio').innerHTML = html;
+
+                /* Corte inteligente por proporção */
+                document.querySelectorAll('.galeria-slide img').forEach(img => {
+                    if (img.complete && img.naturalWidth > 0) {
+                        ajustarFit(img);
+                    } else {
+                        img.addEventListener('load', () => ajustarFit(img), { once: true });
+                    }
+                });
+
+                /* Dots sync */
+                const carousel = document.getElementById('galeriaCarousel');
+                const dots     = document.querySelectorAll('#galeriaDots .dot');
+                if (carousel && dots.length > 1) {
+                    carousel.addEventListener('scroll', () => {
+                        const idx = Math.round(carousel.scrollLeft / carousel.offsetWidth);
+                        dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+                    }, { passive: true });
+                }
+
+                /* ── WhatsApp ──────────────────────────────────── */
+                let foneDestino = WHATSAPP_ADMIN;
+                if (configSnap.exists() && configSnap.data().whatsappGlobal) {
+                    foneDestino = configSnap.data().whatsappGlobal.replace(/\D/g, '');
+                }
+
+                const linkAnuncio = `${APP_URL}detalhe-anuncio.html?id=${id}`;
+                const msg = encodeURIComponent(
+                    `Olá! Tenho interesse neste anúncio:\n\nProduto: ${anuncio.titulo}\n\nLink: ${linkAnuncio}`
+                );
+                const linkWhats = `https://wa.me/${foneDestino}?text=${msg}`;
+
+                document.getElementById('linkWhatsapp').href = linkWhats;
+                document.getElementById('linkWhatsapp').onclick = async (e) => {
+                    e.preventDefault();
+                    try {
+                        await addDoc(collection(db, "interessadosAnuncios"), {
+                            idAnuncio:          id,
+                            nomeAnuncio:        anuncio.titulo || "Sem título",
+                            nomeAnunciante:     anuncio.nome   || "Não informado",
+                            telefoneAnunciante: (
+                                anuncio.whatsapp || anuncio.telefone ||
+                                anuncio.contato  || anuncio.whats   ||
+                                anuncio.anuncianteWhatsapp
+                            ) || foneDestino,
+                            dataInteresse: serverTimestamp(),
+                            status: "novo"
+                        });
+                    } catch (err) {
+                        console.error("Erro ao registrar interesse:", err);
+                    }
+window.location.assign(linkWhats);
+                };
+
+                /* ── Compartilhar ──────────────────────────────── */
+                document.getElementById('btnCompartilhar').onclick = async () => {
+                    const linkPublico = `${APP_URL}detalhe-anuncio.html?id=${id}`;
+                    const shareData = {
+                        title: anuncio.titulo || 'Anúncio',
+                        text:  `Confira este anúncio: ${anuncio.titulo}`,
+                        url:   linkPublico
+                    };
+                    if (navigator.share) {
+                        try { await navigator.share(shareData); } catch (e) { /* cancelado */ }
+                    } else {
+                        try {
+                            await navigator.clipboard.writeText(linkPublico);
+                            showToast('Link copiado com sucesso!', 'success');
+                        } catch (e) {
+                            showToast('Não foi possível copiar o link.', 'error');
+                        }
+                    }
+                };
+
+                /* ── Denunciar ─────────────────────────────────── */
+                document.getElementById('btnDenunciar').onclick = () => abrirModal();
+
+                document.getElementById('btnEnviarDenuncia').onclick = async () => {
+                    const motivo  = txtMotivo.value.trim();
+                    if (!motivo) {
+                        showToast('Informe o motivo da denúncia.', 'error');
+                        return;
+                    }
+
+                    const btnEnviar = document.getElementById('btnEnviarDenuncia');
+                    btnEnviar.disabled    = true;
+                    btnEnviar.textContent = 'Enviando…';
+
+                    try {
+                        await addDoc(collection(db, "denuncias_anuncios"), {
+                            idAnuncio:       id,
+                            nomeAnuncio:     anuncio.titulo,
+                            motivoDenuncia:  motivo,
+                            dataDenuncia:    serverTimestamp(),
+                            statusDenuncia:  "pendente"
+                        });
+                        fecharModal();
+                        showToast('Denúncia enviada com sucesso!', 'success');
+                    } catch (error) {
+                        console.error("Erro ao enviar denúncia:", error);
+                        showToast('Erro ao enviar denúncia. Tente novamente.', 'error');
+                    } finally {
+                        btnEnviar.disabled    = false;
+                        btnEnviar.textContent = 'Enviar Denúncia';
+                    }
+                };
+
+            } catch (error) {
+                console.error("Erro ao carregar anúncio:", error);
+                document.getElementById('detalheAnuncio').innerHTML =
+                    `<p style="padding:40px 20px; text-align:center; color:#8e8e93;">Erro ao carregar anúncio.</p>`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarDetalhes();
+        });
+
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                carregarDetalhes();
+            }
+        });
+    </script>
+</body>
+</html>

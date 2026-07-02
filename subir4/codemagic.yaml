@@ -1,0 +1,52 @@
+workflows:
+  ios-workflow:
+    name: Pede Ai iOS
+    max_build_duration: 60
+
+    integrations:
+      app_store_connect: Personal
+
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: br.com.pedeai.app
+      xcode: latest
+
+    scripts:
+      - name: Install dependencies
+        script: |
+          set -e
+          npm install
+
+      - name: Sync Capacitor
+        script: |
+          set -e
+          npx cap sync ios
+
+      - name: Auto increment build number
+        script: |
+          set -e
+          cd ios/App
+
+          echo "Setting automatic build number..."
+          agvtool new-version -all $(date +%s) || true
+
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+
+      - name: Build IPA
+        script: |
+          set -e
+          xcode-project build-ipa \
+            --project ios/App/App.xcodeproj \
+            --scheme App
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true

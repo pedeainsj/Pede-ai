@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Suporte — Pede Aí</title>
+<meta name="description" content="Central de Suporte do Pede Aí. Tire dúvidas sobre cadastro, anúncios, marketplace e mais.">
+
+<style>
+  /* ======================================================
+     ÁREA DE CONFIGURAÇÃO — EDITE APENAS AQUI
+     ====================================================== */
+  :root{
+    --cor-marca: #ee4d2d;       /* mesma cor usada no plano Premium do config.js */
+    --cor-marca-escura: #c93f24;
+    --cor-fundo: #f5f6f8;
+    --cor-cartao: #ffffff;
+    --cor-texto: #1c1c1e;
+    --cor-texto-suave: #6e6e73;
+    --cor-borda: #e5e5ea;
+    --raio: 18px;
+  }
+  </style>
+</head>
+<body>
+
+<!-- ======================================================
+     DADOS DE CONTATO E APP — EDITE APENAS AQUI
+     (whatsappSuporte vem do mesmo padrão usado em CONFIG_SISTEMA do config.js)
+     ====================================================== -->
+<script>
+  window.SUPORTE_CONFIG = {
+    nomePlataforma: "Pede Aí",
+    logoUrl: "", // coloque aqui a URL/caminho da logo, ex: "logo.png". Se vazio, mostra um ícone padrão.
+    whatsappNumero: "5566992387529",      // mesmo formato do whatsappSuporte em config.js (DDI+DDD+numero, só dígitos)
+    whatsappMensagem: "Olá! Preciso de ajuda com o Pede Aí.",
+    emailSuporte: "pedeainsj@gmail.com",
+    horarioAtendimento: "Segunda a Sexta, 08:00 às 18:00",
+    versaoApp: "1.0.0"
+  };
+</script>
+
+<style>
+  *{ box-sizing: border-box; }
+  html, body{
+    margin:0;
+    padding:0;
+    background: var(--cor-fundo);
+    color: var(--cor-texto);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  a{ text-decoration:none; color: inherit; }
+
+  .container{
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+
+  /* HEADER */
+  .header{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    padding: 24px 0 8px;
+  }
+
+  .logo-wrap{
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    background: var(--cor-cartao);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    margin-bottom: 14px;
+    overflow:hidden;
+  }
+  .logo-wrap img{
+    width:100%;
+    height:100%;
+    object-fit: cover;
+  }
+  .logo-fallback{
+    font-size: 30px;
+  }
+
+  .plataforma-nome{
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin: 0 0 4px;
+  }
+
+  .header-sub{
+    font-size: 15px;
+    color: var(--cor-texto-suave);
+    max-width: 460px;
+    margin: 0;
+  }
+
+  /* CARDS */
+  .card{
+    background: var(--cor-cartao);
+    border-radius: var(--raio);
+    padding: 22px;
+    margin-top: 18px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    border: 1px solid var(--cor-borda);
+  }
+
+  .card-titulo{
+    font-size: 19px;
+    font-weight: 700;
+    margin: 0 0 10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+
+  .card-texto{
+    font-size: 15px;
+    color: var(--cor-texto-suave);
+    margin: 0 0 4px;
+  }
+
+  ul.lista-suporte{
+    margin: 12px 0 0;
+    padding: 0;
+    list-style:none;
+    display:grid;
+    gap:10px;
+  }
+  ul.lista-suporte li{
+    font-size: 15px;
+    color: var(--cor-texto);
+    background: var(--cor-fundo);
+    border-radius: 12px;
+    padding: 10px 14px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  ul.lista-suporte li::before{
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--cor-marca);
+    flex-shrink:0;
+  }
+
+  /* BOTÃO WHATSAPP */
+  .btn-whatsapp{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    width:100%;
+    padding: 16px 20px;
+    background: var(--cor-marca);
+    color: #fff;
+    font-size: 17px;
+    font-weight: 600;
+    border-radius: 14px;
+    margin-top: 14px;
+    transition: transform 0.15s ease, background 0.15s ease;
+    box-shadow: 0 8px 20px rgba(238,77,45,0.28);
+  }
+  .btn-whatsapp:active{
+    transform: scale(0.97);
+    background: var(--cor-marca-escura);
+  }
+  .btn-whatsapp svg{
+    width: 20px;
+    height: 20px;
+    flex-shrink:0;
+  }
+
+  .contato-linha{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background: var(--cor-fundo);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-top: 12px;
+    font-size: 15px;
+  }
+  .contato-linha .rotulo{
+    color: var(--cor-texto-suave);
+    font-size: 13px;
+    display:block;
+    margin-bottom: 2px;
+  }
+  .contato-linha .valor{
+    font-weight: 600;
+    word-break: break-all;
+  }
+  .contato-linha .copiar{
+    background: none;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cor-marca);
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 8px;
+    flex-shrink:0;
+  }
+  .contato-linha .copiar:active{
+    background: rgba(238,77,45,0.1);
+  }
+
+  .horario-box{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    background: var(--cor-fundo);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-top: 12px;
+  }
+  .horario-icone{
+    font-size: 22px;
+  }
+  .horario-dias{
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .horario-hora{
+    color: var(--cor-texto-suave);
+    font-size: 14px;
+  }
+
+  .badge-atencao{
+    display:inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--cor-marca-escura);
+    background: rgba(238,77,45,0.1);
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+
+  /* RODAPÉ */
+  .footer{
+    text-align:center;
+    margin-top: 36px;
+    padding-top: 18px;
+    border-top: 1px solid var(--cor-borda);
+  }
+  .footer p{
+    margin: 4px 0;
+    font-size: 13px;
+    color: var(--cor-texto-suave);
+  }
+  .footer .versao{
+    font-size: 12px;
+    color: #b0b0b5;
+  }
+
+  /* toast de copiar */
+  .toast{
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1c1c1e;
+    color: #fff;
+    font-size: 14px;
+    padding: 10px 18px;
+    border-radius: 999px;
+    opacity: 0;
+    pointer-events:none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    z-index: 999;
+  }
+  .toast.mostrar{
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  @media (max-width: 420px){
+    .container{ padding: 20px 16px 48px; }
+    .card{ padding: 18px; }
+    .plataforma-nome{ font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="container">
+
+    <!-- HEADER / LOGO -->
+    <div class="header">
+      <div class="logo-wrap" id="logoWrap">
+        <span class="logo-fallback" id="logoFallback">🛍️</span>
+      </div>
+      <h1 class="plataforma-nome" id="nomePlataforma">Pede Aí</h1>
+      <p class="header-sub">
+        Central de Suporte oficial. Estamos aqui para ajudar usuários, lojistas e parceiros da plataforma.
+      </p>
+    </div>
+
+    <!-- SEÇÃO: SUPORTE -->
+    <div class="card">
+      <h2 class="card-titulo">💬 Suporte</h2>
+      <p class="card-texto">
+        Nossa equipe pode te ajudar com diversos assuntos relacionados à sua conta e à sua experiência no app:
+      </p>
+      <ul class="lista-suporte">
+        <li>Dúvidas sobre cadastro</li>
+        <li>Aprovação de contas</li>
+        <li>Anúncios</li>
+        <li>Marketplace</li>
+        <li>Problemas técnicos</li>
+        <li>Exclusão da conta</li>
+        <li>Outras dúvidas</li>
+      </ul>
+    </div>
+
+    <!-- SEÇÃO: CONTATO -->
+    <div class="card">
+      <h2 class="card-titulo">📞 Contato</h2>
+      <p class="card-texto">
+        Fale diretamente com nosso time de suporte pelo WhatsApp ou envie um e-mail.
+      </p>
+
+      <a href="#" id="btnWhatsapp" class="btn-whatsapp" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.149-.149.347-.397.521-.595.173-.198.232-.347.347-.595.116-.248.058-.462-.058-.61-.115-.149-.652-1.567-.892-2.157-.235-.572-.474-.495-.65-.504l-.554-.01c-.198 0-.521.075-.793.347-.272.272-1.04 1.016-1.04 2.479 0 1.463 1.064 2.876 1.213 3.075.149.198 2.04 3.115 4.943 4.245 2.903 1.13 2.903.752 3.424.706.521-.046 1.694-.692 1.93-1.36.236-.668.236-1.24.165-1.36-.07-.119-.272-.198-.57-.347Z"/><path d="M12.012 2c-5.523 0-10 4.477-10 10 0 1.79.474 3.47 1.302 4.926L2 22l5.21-1.295A9.96 9.96 0 0 0 12.012 22c5.523 0 10-4.477 10-10s-4.477-10-10-10Zm5.844 14.61c-.412.825-2.054 1.622-2.918 1.74-.797.11-1.78.07-3.34-.488-3.107-1.11-5.107-4.05-5.255-4.245-.149-.198-1.213-1.612-1.213-3.075 0-1.463.768-2.207 1.04-2.479.272-.272.595-.347.793-.347l.554.01c.176.009.415-.068.65.504.235.572.892 2.157.892 2.157.116.149.174.346.058.61-.115.248-.174.397-.347.595-.174.198-.347.397-.521.595" opacity="0"/></svg>
+        Falar pelo WhatsApp
+      </a>
+
+      <div class="contato-linha">
+        <div>
+          <span class="rotulo">E-mail de suporte</span>
+          <span class="valor" id="emailTexto">pedeainsj@gmail.com</span>
+        </div>
+        <button class="copiar" id="btnCopiarEmail">Copiar</button>
+      </div>
+    </div>
+
+    <!-- SEÇÃO: HORÁRIO -->
+    <div class="card">
+      <h2 class="card-titulo">🕒 Horário de atendimento</h2>
+      <div class="horario-box">
+        <span class="horario-icone">📅</span>
+        <div>
+          <div class="horario-dias">Segunda a Sexta</div>
+          <div class="horario-hora">08:00 às 18:00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SEÇÃO: EXCLUSÃO DA CONTA -->
+    <div class="card">
+      <span class="badge-atencao">IMPORTANTE</span>
+      <h2 class="card-titulo">🗑️ Exclusão da conta</h2>
+      <p class="card-texto">
+        Caso deseje excluir definitivamente sua conta e seus dados da plataforma, basta entrar em
+        contato com o nosso suporte pelo WhatsApp ou e-mail informados acima, solicitando a exclusão.
+        Sua solicitação será processada e a conta será removida permanentemente, conforme as políticas
+        da plataforma.
+      </p>
+    </div>
+
+    <!-- RODAPÉ -->
+    <div class="footer">
+      <p class="versao">Versão do aplicativo: <span id="versaoApp">1.0.0</span></p>
+      <p>© <span id="anoAtual"></span> Pede Aí</p>
+      <p>Todos os direitos reservados.</p>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast">E-mail copiado!</div>
+
+  <script>
+    (function(){
+      var cfg = window.SUPORTE_CONFIG;
+
+      // Nome da plataforma
+      document.getElementById('nomePlataforma').textContent = cfg.nomePlataforma;
+      document.title = "Suporte — " + cfg.nomePlataforma;
+
+      // Logo (se houver URL configurada, troca o ícone padrão pela imagem)
+      if (cfg.logoUrl) {
+        var wrap = document.getElementById('logoWrap');
+        wrap.innerHTML = '<img src="' + cfg.logoUrl + '" alt="Logo ' + cfg.nomePlataforma + '">';
+      }
+
+      // Botão WhatsApp
+      var numeroLimpo = (cfg.whatsappNumero || '').replace(/\D/g, '');
+      var msg = encodeURIComponent(cfg.whatsappMensagem || '');
+      document.getElementById('btnWhatsapp').href = 'https://wa.me/' + numeroLimpo + '?text=' + msg;
+
+      // E-mail
+      document.getElementById('emailTexto').textContent = cfg.emailSuporte;
+
+      // Copiar e-mail
+      document.getElementById('btnCopiarEmail').addEventListener('click', function(){
+        var texto = cfg.emailSuporte;
+        var toast = document.getElementById('toast');
+
+        function mostrarToast(){
+          toast.classList.add('mostrar');
+          setTimeout(function(){ toast.classList.remove('mostrar'); }, 1800);
+        }
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(texto).then(mostrarToast).catch(mostrarToast);
+        } else {
+          var temp = document.createElement('textarea');
+          temp.value = texto;
+          document.body.appendChild(temp);
+          temp.select();
+          try { document.execCommand('copy'); } catch(e) {}
+          document.body.removeChild(temp);
+          mostrarToast();
+        }
+      });
+
+      // Versão e ano
+      document.getElementById('versaoApp').textContent = cfg.versaoApp;
+      document.getElementById('anoAtual').textContent = new Date().getFullYear();
+    })();
+  </script>
+
+</body>
+</html>

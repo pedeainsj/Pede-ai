@@ -1,0 +1,371 @@
+/* ================================================================
+   ANUNCIOS.CSS — Refatorado com escopo isolado
+   TODAS as regras prefixadas com .classifieds-page
+   para NÃO vazar em products/gourmet do index.html
+   ================================================================ */
+
+/* ── Variáveis locais (não sobrescrevem o :root do index) ────── */
+.classifieds-page {
+    --cl-primary:     #0077ff;
+    --cl-accent:      #ff4757;
+    --cl-bg-gray:     #f2f4f7;
+    --cl-text-main:   #2d3436;
+    --cl-text-muted:  #b2bec3;
+    --cl-shadow:      0 10px 20px rgba(0,0,0,0.04);
+    --cl-radius:      16px;
+}
+
+/* ── Wrapper raiz ─────────────────────────────────────────────── */
+.classifieds-page {
+    background: var(--cl-bg-gray);
+    min-height: calc(100vh - 60px);   /* deixa espaço pro bottom-nav do index */
+    padding-bottom: calc(env(safe-area-inset-bottom) + 100px);
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    color: var(--cl-text-main);
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/* HEADER PRÓPRIO DO MÓDULO                                        */
+/* ─────────────────────────────────────────────────────────────── */
+.classifieds-page .classifieds-header {
+    background: var(--cl-primary);
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 20px 20px;
+    border-radius: 0 0 20px 20px;
+    /* NÃO é sticky — o header principal do index já ocupa o topo  */
+}
+
+/* O header do index já é sticky; o módulo aparece abaixo dele.
+   Se quiser sticky relativo ao scroll, descomente:
+   position: sticky; top: 104px; z-index: 800;               */
+
+.classifieds-page .classifieds-header .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    margin-bottom: 15px;
+}
+
+.classifieds-page .classifieds-header .logo-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: white;
+}
+
+.classifieds-page .classifieds-header .search-box {
+    background: white;
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.classifieds-page .classifieds-header .search-box i {
+    color: #A0AEC0;
+    font-size: 14px;
+}
+
+.classifieds-page .classifieds-header .search-box input {
+    border: none;
+    outline: none;
+    width: 100%;
+    margin-left: 12px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #333;
+    background: transparent;
+}
+
+/* Botão Vender no header */
+.classifieds-page .btn-vender-header {
+    background: rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 30px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    white-space: nowrap;
+}
+
+.classifieds-page .btn-vender-header:active {
+    transform: scale(0.96);
+    background: rgba(255,255,255,0.3);
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/* CATEGORIAS                                                       */
+/* ─────────────────────────────────────────────────────────────── */
+.classifieds-page .categories-container {
+    display: flex;
+    overflow-x: auto;
+    padding: 20px 16px;
+    gap: 15px;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    justify-content: center;
+}
+
+.classifieds-page .categories-container::-webkit-scrollbar {
+    display: none;
+}
+
+.classifieds-page .category-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 70px;
+    flex: 0 0 auto;
+    cursor: pointer;
+}
+
+.classifieds-page .category-icon {
+    width: 55px;
+    height: 55px;
+    background: white;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--cl-primary);
+    font-size: 20px;
+    box-shadow: var(--cl-shadow);
+    transition: background 0.2s, transform 0.2s;
+}
+
+.classifieds-page .category-item span {
+    font-size: 11px;
+    font-weight: 600;
+    color: #636e72;
+    transition: color 0.2s;
+}
+
+/* Estado ativo da categoria */
+.classifieds-page .category-item.active .category-icon {
+    background: var(--cl-primary);
+    color: white;
+    transform: scale(1.05);
+}
+
+.classifieds-page .category-item.active span {
+    color: var(--cl-primary);
+    font-weight: 800;
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/* CONTAINER E GRID                                                 */
+/* ─────────────────────────────────────────────────────────────── */
+.classifieds-page .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px 16px;
+}
+
+.classifieds-page .grid-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/* CARDS DE ANÚNCIO                                                 */
+/* ─────────────────────────────────────────────────────────────── */
+.classifieds-page .card-anuncio {
+    background: white;
+    border-radius: var(--cl-radius);
+    overflow: hidden;
+    box-shadow: var(--cl-shadow);
+    border: 1px solid #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.classifieds-page .card-anuncio:active {
+    transform: scale(0.98);
+}
+
+/* Container de imagem — mesma altura do .img-box do index */
+.classifieds-page .card-img-container {
+    width: 100%;
+    height: 230px;
+    background-color: #fcfcfc;
+    overflow: hidden;
+    border-bottom: 1px solid #f9f9f9;
+}
+
+.classifieds-page .card-img-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Corpo do card */
+.classifieds-page .card-content {
+    padding: 12px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.classifieds-page .card-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #444;
+    height: 36px;
+    line-height: 1.4;
+    margin-bottom: 6px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.classifieds-page .card-price {
+    color: var(--cl-primary);
+    font-size: 18px;
+    font-weight: 800;
+    margin-top: auto;
+}
+
+/* Botões legados escondidos (compatibilidade com cards antigos) */
+.classifieds-page .btn-contato-card,
+.classifieds-page .btn-denunciar-card {
+    display: none !important;
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/* MODAL DE VENDA                                                   */
+/* ─────────────────────────────────────────────────────────────── */
+.classifieds-page .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.classifieds-page .modal-overlay.active {
+    display: flex;
+    animation: cl-fadeIn 0.3s ease;
+}
+
+.classifieds-page .modal-content {
+    background: white;
+    width: 100%;
+    max-width: 400px;
+    border-radius: 24px;
+    padding: 24px;
+    position: relative;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+}
+
+.classifieds-page .modal-content h3 {
+    margin: 0 0 20px 0;
+    text-align: center;
+    color: var(--cl-text-main);
+}
+
+.classifieds-page .modal-option {
+    background: #f8f9fa;
+    border: 2px solid #edf2f7;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.classifieds-page .option-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.classifieds-page .option-icon { font-size: 24px; }
+
+.classifieds-page .option-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.classifieds-page .option-info strong {
+    font-size: 16px;
+    color: var(--cl-text-main);
+}
+
+.classifieds-page .price-tag {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--cl-primary);
+    background: #e0eeff;
+    padding: 2px 8px;
+    border-radius: 6px;
+    width: fit-content;
+}
+
+.classifieds-page .modal-option p {
+    font-size: 13px;
+    color: #636e72;
+    margin: 8px 0 12px 0;
+    line-height: 1.4;
+}
+
+.classifieds-page .btn-continuar {
+    width: 100%;
+    background: var(--cl-primary);
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.classifieds-page .btn-fechar {
+    width: 100%;
+    background: none;
+    border: none;
+    color: #b2bec3;
+    font-weight: 600;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/* ANIMAÇÕES LOCAIS                                                 */
+/* ─────────────────────────────────────────────────────────────── */
+@keyframes cl-fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ─────────────────────────────────────────────────────────────── */
+/* TRANSIÇÃO DE ENTRADA DO MÓDULO                                   */
+/* ─────────────────────────────────────────────────────────────── */
+#classifieds-root {
+    display: none;               /* ocultado por padrão; JS controla */
+}

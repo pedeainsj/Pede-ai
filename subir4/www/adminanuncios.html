@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Painel Admin – Pede Aí</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --sidebar-bg:      #0D1117;
+            --sidebar-hover:   #161B22;
+            --sidebar-active:  #1C2333;
+            --sidebar-border:  rgba(255,255,255,0.07);
+            --sidebar-text:    #7D8590;
+            --sidebar-active-text: #E6EDF3;
+            --blue:            #2563EB;
+            --green:           #16A34A;
+            --red:             #DC2626;
+            --amber:           #D97706;
+            --slate:           #475569;
+            --content-bg:      #F1F5F9;
+            --card-bg:         #FFFFFF;
+            --border:          #E2E8F0;
+            --text:            #0F172A;
+            --text-2:          #64748B;
+            --text-3:          #94A3B8;
+            --shadow-sm:       0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+            --shadow-md:       0 4px 12px rgba(0,0,0,0.08);
+            --r-sm: 7px;
+            --r-md: 11px;
+            --r-lg: 15px;
+            --sidebar-w: 244px;
+        }
+
+        html, body {
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+            background: var(--content-bg);
+            color: var(--text);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* ── MOBILE HEADER (Oculto no Desktop) ── */
+        .mobile-header { display: none; }
+        .mobile-overlay { display: none; }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: var(--sidebar-w);
+            background: var(--sidebar-bg);
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--sidebar-border);
+            z-index: 103;
+            overflow-y: auto;
+        }
+        .sidebar::-webkit-scrollbar { width: 3px; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+        .sidebar-logo {
+            padding: 22px 18px 18px;
+            border-bottom: 1px solid var(--sidebar-border);
+        }
+        .sidebar-logo .brand {
+            font-size: 17px;
+            font-weight: 700;
+            color: #E6EDF3;
+            letter-spacing: -0.3px;
+            display: block;
+        }
+        .sidebar-logo .subbrand {
+            font-size: 10.5px;
+            color: var(--sidebar-text);
+            text-transform: uppercase;
+            letter-spacing: 1.1px;
+            margin-top: 2px;
+            display: block;
+        }
+
+        .sidebar-group-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #3D444D;
+            padding: 18px 18px 6px;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 18px;
+            cursor: pointer;
+            color: var(--sidebar-text);
+            font-size: 13.5px;
+            font-weight: 500;
+            text-decoration: none;
+            position: relative;
+            transition: background 0.12s, color 0.12s;
+            -webkit-user-select: none; user-select: none;
+        }
+        .nav-item:hover {
+            background: var(--sidebar-hover);
+            color: #CDD9E5;
+        }
+        .nav-item.active {
+            background: var(--sidebar-active);
+            color: #E6EDF3;
+        }
+        .nav-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 4px; bottom: 4px;
+            width: 3px;
+            background: var(--blue);
+            border-radius: 0 2px 2px 0;
+        }
+        .nav-item .nav-ico {
+            width: 17px;
+            text-align: center;
+            font-size: 12.5px;
+            flex-shrink: 0;
+            opacity: 0.7;
+        }
+        .nav-item.active .nav-ico { opacity: 1; }
+        .nav-item .nav-lbl { flex: 1; }
+
+        .nav-badge {
+            background: rgba(255,255,255,0.08);
+            color: var(--sidebar-text);
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 10px;
+            min-width: 22px;
+            text-align: center;
+            transition: background 0.12s, color 0.12s;
+        }
+        .nav-item.active .nav-badge { background: var(--blue); color: #fff; }
+        .nav-badge.alert { background: var(--red) !important; color: #fff !important; }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px;
+            border-top: 1px solid var(--sidebar-border);
+        }
+        .sidebar-footer-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.9px;
+            color: #3D444D;
+            margin-bottom: 7px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .sidebar-footer-label i { color: #22C55E; font-size: 11px; }
+        .global-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+        .global-row input {
+            flex: 1;
+            padding: 7px 9px;
+            background: #161B22;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: var(--r-sm);
+            color: #E6EDF3;
+            font-size: 12px;
+            outline: none;
+        }
+        .global-row input::placeholder { color: #4B5563; }
+        .global-row input:focus { border-color: var(--blue); }
+        .global-row button {
+            background: var(--blue);
+            color: #fff;
+            border: none;
+            padding: 7px 11px;
+            border-radius: var(--r-sm);
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .link-voltar {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            color: var(--sidebar-text);
+            text-decoration: none;
+            font-size: 12.5px;
+            padding: 6px 0;
+            transition: color 0.12s;
+        }
+        .link-voltar:hover { color: #CDD9E5; }
+
+        /* ── MAIN ── */
+        .main-content {
+            margin-left: var(--sidebar-w);
+            min-height: 100vh;
+            padding: 30px 32px 48px;
+        }
+
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* ── SECTION HEADER ── */
+        .section-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 22px;
+        }
+        .section-header h1 {
+            font-size: 21px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.4px;
+        }
+        .section-header .s-meta {
+            font-size: 13px;
+            color: var(--text-3);
+            margin-top: 3px;
+        }
+        .s-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .pill-pendente   { background: #FEF3C7; color: #92400E; }
+        .pill-aprovado   { background: #DCFCE7; color: #166534; }
+        .pill-inter      { background: #DBEAFE; color: #1E40AF; }
+        .pill-negociacao { background: #FFF7ED; color: #9A3412; }
+        .pill-vendido    { background: #D1FAE5; color: #065F46; }
+        .pill-cancelado  { background: #F1F5F9; color: #475569; }
+        .pill-denuncia   { background: #FEE2E2; color: #991B1B; }
+
+        /* ── CARD BASE ── */
+        .card-admin {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--r-lg);
+            padding: 15px 16px;
+            margin-bottom: 11px;
+            display: flex;
+            gap: 13px;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.15s;
+        }
+        .card-admin:hover { box-shadow: var(--shadow-md); }
+
+        .foto-admin {
+            width: 68px; height: 68px;
+            object-fit: cover;
+            border-radius: 8px;
+            flex-shrink: 0;
+            background: #F1F5F9;
+        }
+        .foto-placeholder {
+            width: 68px; height: 68px;
+            border-radius: 8px;
+            flex-shrink: 0;
+            background: #F1F5F9;
+            display: flex; align-items: center; justify-content: center;
+            color: #CBD5E1;
+            font-size: 20px;
+        }
+
+        .info-admin { flex: 1; min-width: 0; }
+
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 7px;
+        }
+        .meta-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11.5px;
+            color: var(--text-2);
+        }
+        .meta-chip i { font-size: 10px; color: var(--text-3); }
+
+        .card-price {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 7px;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .badge-pendente  { background: #FEF3C7; color: #92400E; }
+        .badge-aprovado  { background: #DCFCE7; color: #166534; }
+        .badge-rejeitado { background: #FEE2E2; color: #991B1B; }
+
+        .contact-strip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #166534;
+            margin-bottom: 9px;
+        }
+        .contact-strip i { color: #16A34A; }
+
+        .denuncia-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--text-3);
+        }
+        .denuncia-chip.alert { color: var(--red); }
+
+        /* ── ACTION BUTTONS ── */
+        .acoes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            padding: 7px 12px;
+            border: none;
+            border-radius: var(--r-sm);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: opacity 0.12s, transform 0.1s;
+            white-space: nowrap;
+            -webkit-user-select: none; user-select: none;
+        }
+        .btn:active { transform: scale(0.96); }
+
+        .btn-aprovar       { background: #DCFCE7; color: #166534; }
+        .btn-rejeitar      { background: #FEF3C7; color: #92400E; }
+        .btn-editar-val    { background: #EFF6FF; color: #1D4ED8; }
+        .btn-whats         { background: #16A34A; color: #fff; }
+        .btn-excluir       { background: #FEE2E2; color: #DC2626; }
+        .btn-gray          { background: #F1F5F9; color: #475569; }
+        .btn-blue          { background: #EFF6FF; color: #1D4ED8; }
+        .btn-novo          { background: #EFF6FF; color: #1D4ED8; }
+        .btn-negociar      { background: #FFF7ED; color: #9A3412; }
+        .btn-vendido-acao  { background: #DCFCE7; color: #166534; }
+        .btn-cancelado-acao{ background: #FEE2E2; color: #991B1B; }
+
+        /* ── INTERMEDIAÇÃO CARD ACCENTS ── */
+        .accent-blue   { border-left: 3px solid var(--blue); }
+        .accent-amber  { border-left: 3px solid var(--amber); }
+        .accent-green  { border-left: 3px solid var(--green); }
+        .accent-slate  { border-left: 3px solid #94A3B8; }
+        .accent-red    { border-left: 3px solid var(--red); }
+
+        .inter-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 7px;
+        }
+        .inter-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 12.5px;
+            color: var(--text-2);
+            margin-bottom: 3px;
+        }
+        .inter-row i { font-size: 10.5px; color: var(--text-3); width: 14px; text-align: center; }
+
+        /* ── DENÚNCIA CARD ── */
+        .denuncia-nome {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--red);
+            margin-bottom: 5px;
+        }
+        .denuncia-motivo {
+            font-size: 13px;
+            color: var(--text);
+            margin-bottom: 3px;
+        }
+        .denuncia-data {
+            font-size: 11.5px;
+            color: var(--text-3);
+        }
+
+        /* ── EMPTY STATE ── */
+        .empty-state {
+            text-align: center;
+            padding: 52px 24px;
+            color: var(--text-3);
+        }
+        .empty-state i {
+            font-size: 34px;
+            margin-bottom: 12px;
+            display: block;
+            opacity: 0.35;
+        }
+        .empty-state p { font-size: 14px; }
+
+        /* ── LOADING ── */
+        .loading-msg {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-3);
+            font-size: 13px;
+        }
+        .loading-msg i { margin-right: 6px; }
+
+        /* ── MODAL EDITAR VALOR ── */
+        #modalEditarValor {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+        #modalEditarValor.ativo { display: flex; }
+        .modal-editar-box {
+            background: #fff;
+            border-radius: var(--r-lg);
+            padding: 26px;
+            width: 88%;
+            max-width: 340px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+        }
+        .modal-editar-box h3 {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+        .modal-editar-box input[type=number] {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 9px;
+            font-size: 16px;
+            box-sizing: border-box;
+            margin-bottom: 16px;
+            outline: none;
+            color: var(--text);
+        }
+        .modal-editar-box input[type=number]:focus { border-color: var(--blue); }
+        .modal-editar-acoes { display: flex; gap: 8px; }
+        .modal-editar-acoes button {
+            flex: 1; padding: 11px;
+            border: none; border-radius: 9px;
+            font-size: 14px; font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-confirmar-valor { background: var(--blue); color: #fff; }
+        .btn-cancelar-valor  { background: #F1F5F9; color: #475569; }
+
+        /* ============================================================ */
+        /* RESPONSIVIDADE MOBILE (Mobile First Experience)              */
+        /* ============================================================ */
+        @media (max-width: 768px) {
+            
+            /* Navbar Superior Mobile */
+            .mobile-header {
+                display: flex;
+                position: fixed;
+                top: 0; left: 0; right: 0;
+                height: 60px;
+                background: var(--sidebar-bg);
+                align-items: center;
+                padding: 0 20px;
+                z-index: 101;
+                box-shadow: var(--shadow-md);
+            }
+            .mobile-header button {
+                background: none;
+                border: none;
+                color: #E6EDF3;
+                font-size: 22px;
+                cursor: pointer;
+                padding: 5px;
+            }
+            .mobile-header .brand {
+                color: #E6EDF3;
+                font-weight: 700;
+                font-size: 18px;
+                margin-left: 15px;
+            }
+
+            /* Overlay Escuro quando o menu lateral abre */
+            .mobile-overlay {
+                display: block;
+                position: fixed; inset: 0;
+                background: rgba(0,0,0,0.6);
+                z-index: 102;
+                opacity: 0; pointer-events: none;
+                transition: opacity 0.3s;
+            }
+            .mobile-overlay.ativo {
+                opacity: 1; pointer-events: auto;
+            }
+
+            /* Sidebar adaptada para mobile (escondida por padrão) */
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                width: 280px; /* Um pouco mais larga para o toque */
+                z-index: 103;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+                box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+            }
+
+            /* Main Content (ocupa 100% da tela e ganha padding pro menu) */
+            .main-content {
+                margin-left: 0 !important;
+                padding: 80px 16px 40px !important; 
+            }
+
+            /* Cabeçalho da Seção (Titulo x Badge) */
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            /* Layout dos Cards: Compacto e lado a lado para manter nitidez */
+            .card-admin {
+                flex-direction: row;
+                flex-wrap: wrap;
+                padding: 14px;
+                gap: 12px;
+                align-items: flex-start;
+            }
+
+            /* Imagem ajustada para a resolução real da miniatura (evita desfoque) */
+            .foto-admin, .foto-placeholder {
+                width: 85px;
+                height: 85px;
+                border-radius: 8px;
+                flex-shrink: 0;
+            }
+
+            /* Container de informações ocupa o espaço restante */
+            .info-admin {
+                width: calc(100% - 97px); /* 85px da imagem + 12px de gap */
+            }
+
+            /* Botões de Ações: Grade SaaS profissional (2 colunas) */
+            .acoes {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+                width: 100%;
+                margin-top: 12px;
+            }
+            
+            /* Configuração dos botões: Altura premium e alinhamento central */
+            .acoes .btn {
+                width: 100%;
+                padding: 10px 6px;
+                font-size: 12.5px;
+                justify-content: center;
+            }
+
+            /* Se houver um número ímpar de botões, o último ocupa a linha inteira elegantemente */
+            .acoes .btn:last-child:nth-child(odd) {
+                grid-column: 1 / -1;
+            }
+
+            /* Informações gerais do card */
+            .card-meta-row {
+                gap: 8px;
+            }
+            .meta-chip {
+                padding: 4px 8px;
+                background: #F1F5F9;
+                border-radius: 6px;
+            }
+            .card-title {
+                font-size: 16px;
+                white-space: normal; /* Permite que títulos longos quebrem linha */
+            }
+
+            /* Correções para cards de Intermediação e Denúncia */
+            .inter-title, .denuncia-nome {
+                font-size: 16px;
+                white-space: normal;
+            }
+            .inter-row {
+                font-size: 14px;
+                margin-bottom: 6px;
+            }
+
+            /* Área global do Sidebar (WhatsApp Geral) */
+            .global-row {
+                flex-direction: column;
+            }
+            .global-row button {
+                padding: 12px;
+                font-size: 14px;
+                width: 100%;
+            }
+
+            /* Modal de Edição empilhado */
+            .modal-editar-acoes {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .modal-editar-acoes button {
+                padding: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="mobile-header">
+    <button onclick="toggleMobileMenu()"><i class="fas fa-bars"></i></button>
+    <span class="brand">Pede Aí Admin</span>
+</div>
+<div class="mobile-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
+
+<aside class="sidebar">
+
+    <div class="sidebar-logo">
+        <span class="brand">Pede Aí</span>
+        <span class="subbrand">Painel Administrativo</span>
+    </div>
+
+    <div class="sidebar-group-label">Anúncios</div>
+    <a class="nav-item active" data-section="pendentes" onclick="mostrarSecao('pendentes')">
+        <span class="nav-ico"><i class="fas fa-clock"></i></span>
+        <span class="nav-lbl">Pendentes</span>
+        <span class="nav-badge" id="cnt-pendentes">–</span>
+    </a>
+    <a class="nav-item" data-section="aprovados" onclick="mostrarSecao('aprovados')">
+        <span class="nav-ico"><i class="fas fa-check-circle"></i></span>
+        <span class="nav-lbl">Aprovados</span>
+        <span class="nav-badge" id="cnt-aprovados">–</span>
+    </a>
+
+    <div class="sidebar-group-label">Intermediação</div>
+    <a class="nav-item" data-section="intermediacao" onclick="mostrarSecao('intermediacao')">
+        <span class="nav-ico"><i class="fas fa-inbox"></i></span>
+        <span class="nav-lbl">Novos Pedidos</span>
+        <span class="nav-badge" id="cnt-intermediacao">–</span>
+    </a>
+    <a class="nav-item" data-section="negociacoes" onclick="mostrarSecao('negociacoes')">
+        <span class="nav-ico"><i class="fas fa-handshake"></i></span>
+        <span class="nav-lbl">Em Negociação</span>
+        <span class="nav-badge" id="cnt-negociacoes">–</span>
+    </a>
+    <a class="nav-item" data-section="vendidos" onclick="mostrarSecao('vendidos')">
+        <span class="nav-ico"><i class="fas fa-check-double"></i></span>
+        <span class="nav-lbl">Vendidos</span>
+        <span class="nav-badge" id="cnt-vendidos">–</span>
+    </a>
+    <a class="nav-item" data-section="cancelados" onclick="mostrarSecao('cancelados')">
+        <span class="nav-ico"><i class="fas fa-ban"></i></span>
+        <span class="nav-lbl">Cancelados</span>
+        <span class="nav-badge" id="cnt-cancelados">–</span>
+    </a>
+
+    <div class="sidebar-group-label">Moderação</div>
+    <a class="nav-item" data-section="denuncias" onclick="mostrarSecao('denuncias')">
+        <span class="nav-ico"><i class="fas fa-flag"></i></span>
+        <span class="nav-lbl">Denúncias</span>
+        <span class="nav-badge" id="cnt-denuncias">–</span>
+    </a>
+
+    <div class="sidebar-footer">
+        <div class="sidebar-footer-label">
+            <i class="fab fa-whatsapp"></i> Número Global
+        </div>
+        <div class="global-row">
+            <input type="text" id="inputNumeroGlobal" placeholder="5511999999999">
+            <button onclick="window.salvarNumeroGlobal()">Salvar</button>
+        </div>
+        <a href="anuncios.html" class="link-voltar">
+            <i class="fas fa-arrow-left"></i> Voltar ao site
+        </a>
+    </div>
+</aside>
+
+<main class="main-content">
+
+    <div class="section active" id="section-pendentes">
+        <div class="section-header">
+            <div>
+                <h1>Anúncios Pendentes</h1>
+                <div class="s-meta">Aguardando revisão e aprovação</div>
+            </div>
+            <span class="s-pill pill-pendente"><i class="fas fa-clock"></i> Pendente</span>
+        </div>
+        <div id="listaPendentes">
+            <div class="loading-msg"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+        </div>
+    </div>
+
+    <div class="section" id="section-aprovados">
+        <div class="section-header">
+            <div>
+                <h1>Anúncios Aprovados</h1>
+                <div class="s-meta">Anúncios ativos na vitrine</div>
+            </div>
+            <span class="s-pill pill-aprovado"><i class="fas fa-check-circle"></i> Aprovado</span>
+        </div>
+        <div id="listaAprovados">
+            <div class="loading-msg"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+        </div>
+    </div>
+
+    <div class="section" id="section-intermediacao">
+        <div class="section-header">
+            <div>
+                <h1>Central de Intermediação</h1>
+                <div class="s-meta">Novos pedidos aguardando ação</div>
+            </div>
+            <span class="s-pill pill-inter"><i class="fas fa-inbox"></i> Novo</span>
+        </div>
+        <div id="listaIntermediacao">
+            <div class="loading-msg"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+        </div>
+    </div>
+
+    <div class="section" id="section-negociacoes">
+        <div class="section-header">
+            <div>
+                <h1>Negociações em Andamento</h1>
+                <div class="s-meta">Intermediações ativas no momento</div>
+            </div>
+            <span class="s-pill pill-negociacao"><i class="fas fa-handshake"></i> Em negociação</span>
+        </div>
+        <div id="listaNegociacoes">
+            <div class="loading-msg"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+        </div>
+    </div>
+
+    <div class="section" id="section-vendidos">
+        <div class="section-header">
+            <div>
+                <h1>Vendidos</h1>
+                <div class="s-meta">Histórico de negociações concluídas</div>
+            </div>
+            <span class="s-pill pill-vendido"><i class="fas fa-check-double"></i> Vendido</span>
+        </div>
+        <div id="listaVendidos">
+            <div class="loading-msg"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+        </div>
+    </div>
+
+    <div class="section" id="section-cancelados">
+        <div class="section-header">
+            <div>
+                <h1>Cancelados</h1>
+                <div class="s-meta">Histórico de negociações canceladas</div>
+            </div>
+            <span class="s-pill pill-cancelado"><i class="fas fa-ban"></i> Cancelado</span>
+        </div>
+        <div id="listaCancelados">
+            <div class="loading-msg"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+        </div>
+    </div>
+
+    <div class="section" id="section-denuncias">
+        <div class="section-header">
+            <div>
+                <h1>Denúncias</h1>
+                <div class="s-meta">Anúncios denunciados pelos usuários</div>
+            </div>
+            <span class="s-pill pill-denuncia"><i class="fas fa-flag"></i> Denúncia</span>
+        </div>
+        <div id="listaDenuncias">
+            <div class="loading-msg"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+        </div>
+    </div>
+
+</main>
+
+<div id="modalEditarValor">
+    <div class="modal-editar-box">
+        <h3><i class="fas fa-tag" style="color:#2563EB; margin-right:7px;"></i>Editar Valor do Anúncio</h3>
+        <input type="number" id="inputNovoValor" placeholder="Ex: 150.00" step="0.01" min="0">
+        <div class="modal-editar-acoes">
+            <button class="btn-cancelar-valor" onclick="window.fecharModalEditarValor()">Cancelar</button>
+            <button class="btn-confirmar-valor" onclick="window.confirmarEdicaoValor()">Salvar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* Navegação entre seções – script não-module para ficar acessível inline */
+    function mostrarSecao(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        const sec = document.getElementById('section-' + id);
+        const nav = document.querySelector('[data-section="' + id + '"]');
+        if (sec) sec.classList.add('active');
+        if (nav) nav.classList.add('active');
+    }
+
+    /* Lógica Exclusiva para o Mobile (Menu Hambúrguer) */
+    function toggleMobileMenu() {
+        document.querySelector('.sidebar').classList.toggle('open');
+        document.getElementById('mobileOverlay').classList.toggle('ativo');
+    }
+
+    // Fecha o menu lateral no mobile após clicar em uma aba
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    document.querySelector('.sidebar').classList.remove('open');
+                    document.getElementById('mobileOverlay').classList.remove('ativo');
+                }
+            });
+        });
+    });
+</script>
+
+<script type="module" src="config.js"></script>
+<script type="module" src="adminanuncios.js"></script>
+</body>
+</html>

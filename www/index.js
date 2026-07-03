@@ -548,6 +548,17 @@ function renderizarFiltros() {
              onclick="filtrarPorPalavra('${nome === 'Todos' ? '' : nome}', this)">
             ${nome}
         </div>`).join('');
+
+    // Força o WKWebView (Capacitor/iOS) a reavaliar o position:sticky do
+    // elemento. O WKWebView calcula a posição sticky no primeiro layout
+    // (quando o container ainda tinha só o skeleton) e não reavalia esse
+    // cálculo automaticamente quando o innerHTML é substituído. Alternar
+    // display força um reflow real, igual ao que setAppMode() já faz
+    // manualmente na troca de modo. O Safari ignora isso sem efeito colateral,
+    // pois já reavalia o sticky sozinho.
+    container.style.display = 'none';
+    void container.offsetHeight;
+    container.style.display = '';
 }
 
 async function renderizarProdutos(opcoes = {}) {

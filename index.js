@@ -98,16 +98,6 @@ const MAPAS_FILTROS = {
         'celulares': ['celular', 'smartphone', 'iphone', 'samsung', 'xiaomi', 'motorola', 'redmi', 'android', 'ios', 'capinha', 'carregador'],
         'ferramentas': ['ferramenta', 'furadeira', 'makita', 'serra', 'pa', 'martelo', 'chave', 'parafusadeira', 'trena', 'alicate'],
         'cosméticos': ['batom', 'perfume', 'desodorante', 'creme', 'hidratante', 'maquiagem', 'shampoo', 'condicionador', 'esmalte', 'beleza', 'cosmetico'],
-        'moda feminina': ['moda feminina', 'vestido', 'blusa feminina', 'saia', 'roupa feminina', 'feminino'],
-        'moda masculina': ['moda masculina', 'camisa', 'camiseta masculina', 'bermuda', 'roupa masculina', 'masculino'],
-        'moda infantil': ['moda infantil', 'roupa infantil', 'infantil', 'bebe', 'bebê', 'criança'],
-        'calçados': ['calçado', 'calcado', 'tenis', 'tênis', 'sapato', 'sandalia', 'sandália', 'chinelo', 'bota'],
-        'bolsas': ['bolsa', 'mochila', 'carteira', 'necessaire'],
-        'bijuterias': ['bijuteria', 'bijouteria', 'colar', 'brinco', 'pulseira', 'anel', 'acessorio', 'acessório'],
-        'casa e decoração': ['casa e decoração', 'decoracao', 'decoração', 'enfeite', 'quadro decorativo', 'tapete', 'cortina'],
-        'móveis': ['movel', 'móvel', 'moveis', 'móveis', 'sofa', 'sofá', 'cama', 'armario', 'armário', 'mesa', 'cadeira', 'estante', 'guarda-roupa'],
-        'informática': ['informatica', 'informática', 'computador', 'notebook', 'monitor', 'teclado', 'mouse', 'impressora', 'periferico', 'periférico'],
-        'pet shop': ['pet shop', 'petshop', 'ração', 'racao', 'cachorro', 'gato', 'coleira', 'aquario', 'aquário', 'pet'],
         'promoção': ['promoção', 'promocao', 'oferta', 'queima', 'desconto', 'liquidando', 'barato', 'off']
     },
     'restaurants': {
@@ -117,11 +107,6 @@ const MAPAS_FILTROS = {
         'doces': ['doce', 'bolo', 'chocolate', 'brownie', 'pudim', 'torta', 'confeitaria'],
         'salgados': ['salgado', 'coxinha', 'empada', 'quibe', 'kibe', 'enroladinho', 'esfiha'],
         'fitness': ['fitness', 'fit', 'saudavel', 'salada', 'legumes', 'marmita fitness', 'marmita fit', 'leve', 'diet', 'natural'],
-        'marmitas': ['marmita', 'marmitex', 'quentinha', 'marmita caseira', 'prato feito', 'pf'],
-        'pastéis': ['pastel', 'pastelaria', 'pastel de feira'],
-        'padaria': ['padaria', 'pão', 'pao', 'paozinho', 'pãozinho', 'pao de queijo', 'pão de queijo', 'rosca'],
-        'bolos': ['bolo', 'bolo confeitado', 'cupcake', 'bolo de aniversario', 'bolo de aniversário'],
-        'sorvetes gourmet': ['sorvete gourmet', 'gelato artesanal', 'milk shake', 'milkshake', 'sundae'],
         'promoção': ['promoção', 'promocao', 'oferta', 'combo', 'desconto', 'barato', 'off']
     },
     'classifieds': {
@@ -134,8 +119,8 @@ const MAPAS_FILTROS = {
 };
 
 const CHIPS_POR_MODO = {
-    'products': ['Todos', 'Eletrônicos', 'Celulares', 'Ferramentas', 'Cosméticos', 'Moda Feminina', 'Moda Masculina', 'Moda Infantil', 'Calçados', 'Bolsas', 'Bijuterias', 'Casa e Decoração', 'Móveis', 'Informática', 'Pet Shop', 'Promoção'],
-    'restaurants': ['Todos', 'Lanches', 'Bebidas', 'Sorvetes', 'Doces', 'Salgados', 'Fitness', 'Marmitas', 'Pastéis', 'Padaria', 'Bolos', 'Sorvetes Gourmet', 'Promoção'],
+    'products': ['Todos', 'Eletrônicos', 'Celulares', 'Ferramentas', 'Cosméticos', 'Promoção'],
+    'restaurants': ['Todos', 'Lanches', 'Bebidas', 'Sorvetes', 'Doces', 'Salgados', 'Fitness', 'Promoção'],
     'classifieds': ['Todos', 'Veículos', 'Imóveis', 'Animais', 'Máquinas', 'Outros']
 };
 
@@ -1234,21 +1219,6 @@ function garantirRenderizacaoValida() {
     }
     if (track && track.children.length === 0 && todosProdutos.length > 0) {
         try { inicializarArialProdutos(); } catch (e) { console.error('Retentativa de inicializarArialProdutos falhou:', e); }
-    }
-
-    // Recalcula --pedeai-header-height e --pedeai-filters-height agora que os
-    // filtros reais (não mais o skeleton) já existem no DOM. A primeira medição
-    // (DOMContentLoaded, no index.html) acontece cedo demais e captura apenas
-    // o skeleton do chipContainer; sem este recálculo, o app iOS só corrigia
-    // o layout ao trocar de modo via setAppMode.
-    if (document.body.classList.contains('is-capacitor-app')) {
-        const header = document.getElementById('dynamicHeader');
-        if (header) {
-            document.documentElement.style.setProperty('--pedeai-header-height', header.offsetHeight + 'px');
-        }
-        if (chips) {
-            document.documentElement.style.setProperty('--pedeai-filters-height', chips.offsetHeight + 'px');
-        }
     }
 }
 

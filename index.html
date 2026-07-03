@@ -152,15 +152,6 @@
             top: 104px; 
             z-index: 900;
         }
-        body.is-capacitor-app .quick-filters {
-            position: fixed;
-            top: var(--pedeai-header-height, 104px);
-            left: 0;
-            right: 0;
-        }
-        body.is-capacitor-app .container {
-            margin-top: calc(var(--pedeai-filters-height, 58px) + 16px);
-        }
         .quick-filters::-webkit-scrollbar { display: none; }
 
         .filter-chip { 
@@ -347,29 +338,6 @@
 <body data-index-page="true" class="mode-products">
     <script>
         (function() {
-            // Detecta o app iOS (Capacitor) para aplicar o fix de posicionamento
-            // fixo da barra de filtros — o WKWebView não empilha corretamente
-            // múltiplos elementos position:sticky como o Safari faz.
-            if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-                document.body.classList.add('is-capacitor-app');
-
-                // Mede a altura real do header e do filtro assim que o DOM estiver pronto,
-                // para que .quick-filters e .container usem os valores corretos já na
-                // primeira abertura do app (sem depender de uma troca de modo via setAppMode).
-                document.addEventListener('DOMContentLoaded', function() {
-                    requestAnimationFrame(function() {
-                        const header = document.getElementById('dynamicHeader');
-                        const chips = document.getElementById('chipContainer');
-                        if (header) {
-                            document.documentElement.style.setProperty('--pedeai-header-height', header.offsetHeight + 'px');
-                        }
-                        if (chips) {
-                            document.documentElement.style.setProperty('--pedeai-filters-height', chips.offsetHeight + 'px');
-                        }
-                    });
-                });
-            }
-
             // Controle de splash: exibe apenas uma vez por sessão.
             // Usa classe no <body>, pois a div da splash ainda não existe
             // no DOM neste ponto do parsing — getElementById aqui sempre falhava.
@@ -588,15 +556,6 @@ const classifiedsRoot = document.getElementById('classifieds-root');
 const navVender       = document.getElementById('nav-vender');
 
 const mainHeader = document.getElementById('dynamicHeader');
-
-// Só no app iOS: mede a altura real do header (varia por causa do notch/Dynamic
-// Island) e do filtro, para posicionar o .quick-filters fixed corretamente.
-if (document.body.classList.contains('is-capacitor-app') && mainHeader && chipContainer) {
-    requestAnimationFrame(() => {
-        document.documentElement.style.setProperty('--pedeai-header-height', mainHeader.offsetHeight + 'px');
-        document.documentElement.style.setProperty('--pedeai-filters-height', chipContainer.offsetHeight + 'px');
-    });
-}
 
 if (mode === 'classifieds') {
     if (mainHeader)      mainHeader.style.display      = 'none';

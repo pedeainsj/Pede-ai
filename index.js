@@ -14,6 +14,54 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// ─── PAINEL DE DIAGNÓSTICO TEMPORÁRIO (remover depois de investigar) ───
+// Mostra na própria tela do TestFlight o estado real do sticky, sem
+// precisar de Mac/Web Inspector. Só aparece dentro do Capacitor.
+function diagLog(rotulo) {
+    try {
+        const isCapacitor = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+        if (!isCapacitor) return;
+
+        const header = document.getElementById('dynamicHeader');
+        const chips = document.getElementById('chipContainer');
+        const strip = document.getElementById('featuredStrip');
+
+        const info = (el) => {
+            if (!el) return 'null';
+            const cs = getComputedStyle(el);
+            const rect = el.getBoundingClientRect();
+            return `pos=${cs.position} top=${cs.top} zIndex=${cs.zIndex} disp=${cs.display} `
+                 + `rectTop=${Math.round(rect.top)} offsetTop=${el.offsetTop} `
+                 + `filhos=${el.children.length}`;
+        };
+
+        const linha = `[DIAG ${rotulo}] scrollY=${Math.round(window.scrollY)} | `
+            + `header: ${info(header)} | chips: ${info(chips)} | strip: ${info(strip)} | `
+            + `bodyClass=${document.body.className}`;
+
+        console.log(linha);
+
+        let painel = document.getElementById('diag-panel');
+        if (!painel) {
+            painel = document.createElement('div');
+            painel.id = 'diag-panel';
+            painel.style.cssText = 'position:fixed;left:0;right:0;bottom:0;max-height:45vh;overflow:auto;'
+                + 'background:rgba(0,0,0,0.88);color:#0f0;font-size:9px;font-family:monospace;'
+                + 'padding:6px;z-index:999999999;white-space:pre-wrap;line-height:1.4;';
+            document.body.appendChild(painel);
+        }
+        const entry = document.createElement('div');
+        entry.style.borderBottom = '1px solid #333';
+        entry.style.marginBottom = '4px';
+        entry.textContent = linha;
+        painel.appendChild(entry);
+    } catch (e) {
+        console.error('[DIAG] erro:', e);
+    }
+}
+window.diagLog = diagLog;
+// ─── FIM DO PAINEL DE DIAGNÓSTICO ───
+
 let todosProdutos = [];
 let modoAtual = sessionStorage.getItem('pedeai_mode') || 'products';
 let filtroChip = '';
@@ -541,6 +589,7 @@ function inicializarArialProdutos() {
 }
 
 function renderizarFiltros() {
+    diagLog('ANTES-renderizarFiltros');
     const container = document.getElementById('chipContainer');
     if (!container) return;
     container.innerHTML = CHIPS_POR_MODO[modoAtual].map((nome, index) => `
@@ -548,19 +597,7 @@ function renderizarFiltros() {
              onclick="filtrarPorPalavra('${nome === 'Todos' ? '' : nome}', this)">
             ${nome}
         </div>`).join('');
-
-    // Força o WKWebView (Capacitor/iOS) a reavaliar o position:sticky de
-    // TODA a árvore (header + quick-filters). O toggle de display isolado no
-    // próprio chipContainer (tentativa anterior) não resolveu porque o único
-    // gatilho que comprovadamente conserta o sticky é a reescrita de
-    // document.body.className feita em setAppMode() na troca de modo — uma
-    // invalidação de estilo a partir da raiz, não local. Na inicialização
-    // normal o body nasce com class="mode-products" e nunca é reescrito, então
-    // replicamos aqui o mesmo gatilho: remover e reaplicar a classe do body.
-    const classeAtual = document.body.className;
-    document.body.className = '';
-    void document.body.offsetHeight;
-    document.body.className = classeAtual;
+    diagLog('DEPOIS-renderizarFiltros');
 }
 
 async function renderizarProdutos(opcoes = {}) {
@@ -1233,6 +1270,7 @@ function garantirRenderizacaoValida() {
     if (track && track.children.length === 0 && todosProdutos.length > 0) {
         try { inicializarArialProdutos(); } catch (e) { console.error('Retentativa de inicializarArialProdutos falhou:', e); }
     }
+    diagLog('FIM-garantirRenderizacaoValida');
 }
 
 function renderizarTudo() {
@@ -1310,3 +1348,17 @@ window.addEventListener('pageshow', (event) => {
         setTimeout(() => { pageshowRunning = false; }, 500);
     }
 });
+
+// ─── DIAGNÓSTICO ADICIONAL: scroll ao vivo + medição no load ───
+// (remover junto com o restante do painel depois de investigar)
+document.addEventListener('DOMContentLoaded', () => diagLog('DOMContentLoaded'));
+window.addEventListener('load', () => diagLog('window-load'));
+
+let ultimoLogScroll = 0;
+window.addEventListener('scroll', () => {
+    const agora = Date.now();
+    if (agora - ultimoLogScroll < 800) return; // limita frequência de logs
+    ultimoLogScroll = agora;
+    diagLog('SCROLL');
+}, { passive: true });
+// ─── FIM DIAGNÓSTICO ADICIONAL ───

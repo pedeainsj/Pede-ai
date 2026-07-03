@@ -549,16 +549,18 @@ function renderizarFiltros() {
             ${nome}
         </div>`).join('');
 
-    // Força o WKWebView (Capacitor/iOS) a reavaliar o position:sticky do
-    // elemento. O WKWebView calcula a posição sticky no primeiro layout
-    // (quando o container ainda tinha só o skeleton) e não reavalia esse
-    // cálculo automaticamente quando o innerHTML é substituído. Alternar
-    // display força um reflow real, igual ao que setAppMode() já faz
-    // manualmente na troca de modo. O Safari ignora isso sem efeito colateral,
-    // pois já reavalia o sticky sozinho.
-    container.style.display = 'none';
-    void container.offsetHeight;
-    container.style.display = '';
+    // Força o WKWebView (Capacitor/iOS) a reavaliar o position:sticky de
+    // TODA a árvore (header + quick-filters). O toggle de display isolado no
+    // próprio chipContainer (tentativa anterior) não resolveu porque o único
+    // gatilho que comprovadamente conserta o sticky é a reescrita de
+    // document.body.className feita em setAppMode() na troca de modo — uma
+    // invalidação de estilo a partir da raiz, não local. Na inicialização
+    // normal o body nasce com class="mode-products" e nunca é reescrito, então
+    // replicamos aqui o mesmo gatilho: remover e reaplicar a classe do body.
+    const classeAtual = document.body.className;
+    document.body.className = '';
+    void document.body.offsetHeight;
+    document.body.className = classeAtual;
 }
 
 async function renderizarProdutos(opcoes = {}) {

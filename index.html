@@ -152,6 +152,14 @@
             top: 104px; 
             z-index: 900;
         }
+        body.is-capacitor-app .quick-filters {
+            position: fixed;
+            left: 0;
+            right: 0;
+        }
+        body.is-capacitor-app .container {
+            margin-top: 74px;
+        }
         .quick-filters::-webkit-scrollbar { display: none; }
 
         .filter-chip { 
@@ -338,6 +346,13 @@
 <body data-index-page="true" class="mode-products">
     <script>
         (function() {
+            // Detecta o app iOS/Android (Capacitor) para aplicar o fix de
+            // posicionamento fixo da barra de filtros. Precisa rodar antes do
+            // primeiro paint (topo do body) para não haver flash com sticky.
+            if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+                document.body.classList.add('is-capacitor-app');
+            }
+
             // Controle de splash: exibe apenas uma vez por sessão.
             // Usa classe no <body>, pois a div da splash ainda não existe
             // no DOM neste ponto do parsing — getElementById aqui sempre falhava.
@@ -540,7 +555,7 @@
         requestAnimationFrame(function() {
 document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
 element.classList.add('active');
-document.body.className = 'mode-' + mode;
+document.body.className = (document.body.classList.contains('is-capacitor-app') ? 'is-capacitor-app ' : '') + 'mode-' + mode;
 const modoAnterior = sessionStorage.getItem('pedeai_mode');
 sessionStorage.setItem('pedeai_mode', mode);
 // Só invalida o cache DOM ao trocar entre products/restaurants.
@@ -594,7 +609,7 @@ setTimeout(() => {
         (function() {
             const savedMode = sessionStorage.getItem('pedeai_mode');
             if (savedMode) {
-                document.body.className = 'mode-' + savedMode;
+                document.body.className = (document.body.classList.contains('is-capacitor-app') ? 'is-capacitor-app ' : '') + 'mode-' + savedMode;
             }
 
             // FUNÇÃO PARA REMOVER O SPLASH IMEDIATAMENTE (sem animação)
@@ -677,7 +692,7 @@ setTimeout(() => {
                     document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
                     const navAtivo = document.getElementById(`nav-${modoRestaurado}`);
                     if (navAtivo) navAtivo.classList.add('active');
-                    document.body.className = 'mode-' + modoRestaurado;
+                    document.body.className = (document.body.classList.contains('is-capacitor-app') ? 'is-capacitor-app ' : '') + 'mode-' + modoRestaurado;
 
                     // Atualiza a cor da barra de status (meta tag theme-color) imediatamente
                     const themeColorMeta = document.querySelector('meta[name="theme-color"]');

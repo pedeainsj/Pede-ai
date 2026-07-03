@@ -1235,6 +1235,21 @@ function garantirRenderizacaoValida() {
     if (track && track.children.length === 0 && todosProdutos.length > 0) {
         try { inicializarArialProdutos(); } catch (e) { console.error('Retentativa de inicializarArialProdutos falhou:', e); }
     }
+
+    // Recalcula --pedeai-header-height e --pedeai-filters-height agora que os
+    // filtros reais (não mais o skeleton) já existem no DOM. A primeira medição
+    // (DOMContentLoaded, no index.html) acontece cedo demais e captura apenas
+    // o skeleton do chipContainer; sem este recálculo, o app iOS só corrigia
+    // o layout ao trocar de modo via setAppMode.
+    if (document.body.classList.contains('is-capacitor-app')) {
+        const header = document.getElementById('dynamicHeader');
+        if (header) {
+            document.documentElement.style.setProperty('--pedeai-header-height', header.offsetHeight + 'px');
+        }
+        if (chips) {
+            document.documentElement.style.setProperty('--pedeai-filters-height', chips.offsetHeight + 'px');
+        }
+    }
 }
 
 function renderizarTudo() {

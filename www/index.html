@@ -154,11 +154,12 @@
         }
         body.is-capacitor-app .quick-filters {
             position: fixed;
+            top: var(--pedeai-header-height, 104px);
             left: 0;
             right: 0;
         }
         body.is-capacitor-app .container {
-            margin-top: 74px;
+            margin-top: calc(var(--pedeai-filters-height, 58px) + 16px);
         }
         .quick-filters::-webkit-scrollbar { display: none; }
 
@@ -351,6 +352,24 @@
             // primeiro paint (topo do body) para não haver flash com sticky.
             if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
                 document.body.classList.add('is-capacitor-app');
+
+                // Mede a altura real do header (varia por aparelho: notch,
+                // Dynamic Island, safe-area-inset-top) assim que o DOM estiver
+                // pronto, para que .quick-filters e .container usem os valores
+                // corretos já na primeira abertura, em vez de um 104px fixo
+                // que só é correto em alguns modelos de iPhone.
+                document.addEventListener('DOMContentLoaded', function() {
+                    requestAnimationFrame(function() {
+                        var header = document.getElementById('dynamicHeader');
+                        var chips = document.getElementById('chipContainer');
+                        if (header) {
+                            document.documentElement.style.setProperty('--pedeai-header-height', header.offsetHeight + 'px');
+                        }
+                        if (chips) {
+                            document.documentElement.style.setProperty('--pedeai-filters-height', chips.offsetHeight + 'px');
+                        }
+                    });
+                });
             }
 
             // Controle de splash: exibe apenas uma vez por sessão.
@@ -448,7 +467,7 @@
         </div>
     </div>
 
-    <div class="quick-filters" id="chipContainer" data-skeleton="true" style="top: 104px; -webkit-overflow-scrolling: touch;">
+    <div class="quick-filters" id="chipContainer" data-skeleton="true" style="-webkit-overflow-scrolling: touch;">
         <span class="skeleton-chip"></span><span class="skeleton-chip"></span><span class="skeleton-chip"></span><span class="skeleton-chip"></span>
     </div>
 

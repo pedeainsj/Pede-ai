@@ -17,17 +17,14 @@
         /* CORREÇÃO: stack iOS + fallback */
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: var(--bg); margin: 0; color: var(--text); }
         
-<<<<<<< HEAD
-        header { background: rgba(255,255,255,0.96); backdrop-filter: blur(10px); padding: 12px 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(0,0,0,0.05); }
-=======
-        header { background: rgba(255,255,255,0.96); backdrop-filter: blur(10px); padding: calc(12px + env(safe-area-inset-top, 0px)) 20px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(0,0,0,0.05); }
->>>>>>> 96937bb (sync project)
+header { background: rgba(255,255,255,0.96); backdrop-filter: blur(10px); padding: calc(14px + env(safe-area-inset-top, 0px)) 20px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(0,0,0,0.05); }
         .perfil-area { display: flex; align-items: center; gap: 12px; }
-        .foto-perfil { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); background: #eee; }
-        .loja-info b { display: block; font-size: 16px; }
+        .foto-perfil { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); background: #eee; }
+        .loja-info { display: flex; flex-direction: column; gap: 4px; }
+        .loja-info b { display: block; font-size: 15px; line-height: 1.1; }
         .loja-info span { font-size: 12px; color: #777; }
 
-        .btn-edit-perfil-head { background: #f0f0f0; border: none; padding: 5px 10px; border-radius: 5px; font-size: 11px; font-weight: bold; cursor: pointer; color: #555; margin-top: 3px; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-edit-perfil-head { background: #f0f0f0; border: none; padding: 4px 9px; border-radius: 5px; font-size: 10px; font-weight: bold; cursor: pointer; color: #555; margin-top: 0; display: inline-flex; align-items: center; gap: 5px; width: fit-content; }
 
         .painel-edicao-perfil { display: none; background: white; border-bottom: 2px solid #eee; padding: 20px; animation: slideDown 0.3s ease; }
         @keyframes slideDown { from { transform: translateY(-10%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -689,6 +686,30 @@
         }, 200);
     })();
 </script>
+<script>
+    // Limpa o formulário de publicação (foto/vídeo/previews) ao trocar
+    // entre Produtos e Gourmet — não toca em trocarContexto original nem
+    // em dados da loja, produtos publicados ou no restante do painel.
+    (function() {
+        const interval2 = setInterval(() => {
+            if (window.trocarContexto) {
+                const funcAnterior = window.trocarContexto;
+                window.trocarContexto = function(contexto) {
+                    funcAnterior(contexto);
+
+                    const pFotoLimpar = document.getElementById('pFoto');
+                    if (pFotoLimpar) pFotoLimpar.value = '';
+                    if (window.resetarPreviewFoto) resetarPreviewFoto();
+
+                    const pVideoLimpar = document.getElementById('pVideo');
+                    if (pVideoLimpar) pVideoLimpar.value = '';
+                    if (window.resetarPreviewVideo) resetarPreviewVideo();
+                };
+                clearInterval(interval2);
+            }
+        }, 200);
+    })();
+</script>
     <div class="container">
         
         <div id="msgAvisoAdmin" class="aviso-plano"></div>
@@ -749,9 +770,9 @@
                 <input type="text" id="pNumeracao" placeholder="Ex: 38, 40, 42">
             </div>
 
-            <div class="form-group">
-                <label>Fotos do Produto</label>
-                <label for="pFoto" id="labelUploadFoto" style="display:flex; align-items:center; gap:12px; cursor:pointer; border:2px dashed #ddd; border-radius:10px; padding:14px 16px; background:#fafafa; transition:border-color 0.2s;">
+            <div class="form-group" style="background:#fafafa; border:1px solid #eee; border-radius:12px; padding:14px;">
+                <label style="text-transform:uppercase; font-size:11px; letter-spacing:0.5px; color:#999; margin-bottom:8px;">📷 Foto</label>
+                <label for="pFoto" id="labelUploadFoto" style="display:flex; align-items:center; gap:12px; cursor:pointer; border:2px dashed #ddd; border-radius:10px; padding:14px 16px; background:#fff; transition:border-color 0.2s;">
                     <div id="previewFotoForm" style="width:52px; height:52px; border-radius:8px; background:#f0f0f0; border:1px solid #e0e0e0; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;">
                         <i class="fa-solid fa-image" style="font-size:22px; color:#bbb;" id="iconeFotoForm"></i>
                         <img id="imgPreviewForm" src="" style="display:none; width:100%; height:100%; object-fit:cover; object-position:top center;" alt="">
@@ -762,6 +783,9 @@
                     </div>
                 </label>
                 <input type="file" id="pFoto" multiple accept="image/*" style="display:none;" onchange="previewFotoForm(this)">
+                <button type="button" id="btnRemoverFoto" onclick="removerFotoSelecionada()" style="display:none; margin-top:8px; background:none; border:none; color:#dc3545; font-size:12px; font-weight:700; cursor:pointer; padding:4px 0;">
+                    <i class="fa-solid fa-trash"></i> Remover foto
+                </button>
             </div>
 
             <div class="form-group">
@@ -776,12 +800,12 @@
     <button type="button" class="btn-add-config" onclick="adicionarLinhaAdicional()">+ Adicionar opção</button>
 </div>
             <!-- Campo de Vídeo Opcional -->
-            <div class="form-group">
-                <label>Vídeo do Produto (opcional, até 30 segundos)</label>
-                <label for="pVideo" id="labelUploadVideo" style="display:flex; align-items:center; gap:12px; cursor:pointer; border:2px dashed #ddd; border-radius:10px; padding:14px 16px; background:#fafafa; transition:border-color 0.2s;">
+            <div class="form-group" style="background:#fafafa; border:1px solid #eee; border-radius:12px; padding:14px;">
+                <label style="text-transform:uppercase; font-size:11px; letter-spacing:0.5px; color:#999; margin-bottom:8px;">🎬 Vídeo (opcional, até 30 segundos)</label>
+                <label for="pVideo" id="labelUploadVideo" style="display:flex; align-items:center; gap:12px; cursor:pointer; border:2px dashed #ddd; border-radius:10px; padding:14px 16px; background:#fff; transition:border-color 0.2s;">
                     <div id="previewVideoForm" style="width:52px; height:52px; border-radius:8px; background:#f0f0f0; border:1px solid #e0e0e0; display:flex; align-items:center; justify-content:center; overflow:hidden; flex-shrink:0;">
                         <i class="fa-solid fa-video" style="font-size:22px; color:#bbb;" id="iconeVideoForm"></i>
-                        <video id="videoPreview" style="display:none; width:100%; height:100%; object-fit:cover;" muted></video>
+                        <img id="videoThumbPreview" src="" style="display:none; width:100%; height:100%; object-fit:cover;" alt="">
                     </div>
                     <div>
                         <span id="textoUploadVideo" style="font-size:13px; font-weight:700; color:#555; display:block;">Toque para escolher vídeo (MP4, MOV, WebM)</span>
@@ -789,6 +813,9 @@
                     </div>
                 </label>
                 <input type="file" id="pVideo" accept="video/mp4,video/quicktime,video/webm" style="display:none;" onchange="previewVideo(this)">
+                <button type="button" id="btnRemoverVideo" onclick="removerVideoSelecionado()" style="display:none; margin-top:8px; background:none; border:none; color:#dc3545; font-size:12px; font-weight:700; cursor:pointer; padding:4px 0;">
+                    <i class="fa-solid fa-trash"></i> Remover vídeo
+                </button>
             </div>
 
             <button id="btn-salvar" class="btn-post">PUBLICAR NA VITRINE</button>
@@ -946,6 +973,7 @@ function previewFotoForm(input) {
             const icone = document.getElementById('iconeFotoForm');
             const texto = document.getElementById('textoUploadForm');
             const label = document.getElementById('labelUploadFoto');
+            const btnRemover = document.getElementById('btnRemoverFoto');
 
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
@@ -959,6 +987,7 @@ function previewFotoForm(input) {
                     texto.style.color = '#28a745';
                     label.style.borderColor = '#28a745';
                     label.style.background = '#f0fff4';
+                    if (btnRemover) btnRemover.style.display = 'inline-flex';
                 };
                 reader.readAsDataURL(input.files[0]);
             }
@@ -969,6 +998,7 @@ function previewFotoForm(input) {
             const icone = document.getElementById('iconeFotoForm');
             const texto = document.getElementById('textoUploadForm');
             const label = document.getElementById('labelUploadFoto');
+            const btnRemover = document.getElementById('btnRemoverFoto');
             if (!preview) return;
             preview.src = '';
             preview.style.display = 'none';
@@ -977,13 +1007,21 @@ function previewFotoForm(input) {
             texto.style.color = '#555';
             label.style.borderColor = '#ddd';
             label.style.background = '#fafafa';
+            if (btnRemover) btnRemover.style.display = 'none';
+        }
+
+        function removerFotoSelecionada() {
+            const input = document.getElementById('pFoto');
+            if (input) input.value = '';
+            resetarPreviewFoto();
         }
     // Preview e validação de vídeo
         function previewVideo(input) {
-            const previewVideo = document.getElementById('videoPreview');
+            const previewVideo = document.getElementById('videoThumbPreview');
             const icone = document.getElementById('iconeVideoForm');
             const texto = document.getElementById('textoUploadVideo');
             const label = document.getElementById('labelUploadVideo');
+            const btnRemover = document.getElementById('btnRemoverVideo');
             const file = input.files[0];
             if (!file) return;
 
@@ -998,41 +1036,65 @@ function previewFotoForm(input) {
 
             // Valida duração (máximo 30 segundos)
             const video = document.createElement('video');
-            video.preload = 'metadata';
+            video.preload = 'auto';
+            video.muted = true;
+            video.playsInline = true;
+            video.setAttribute('muted', '');
+            video.setAttribute('playsinline', '');
+
+            const capturarThumb = function() {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth || 52;
+                    canvas.height = video.videoHeight || 52;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    previewVideo.src = canvas.toDataURL('image/jpeg', 0.8);
+                    previewVideo.style.display = 'block';
+                    icone.style.display = 'none';
+                    texto.innerText = 'Vídeo selecionado ✅';
+                    texto.style.color = '#28a745';
+                    label.style.borderColor = '#28a745';
+                    label.style.background = '#f0fff4';
+                    if (btnRemover) btnRemover.style.display = 'inline-flex';
+                } catch (err) {
+                    mostrarToast("Erro ao gerar capa do vídeo.", "erro");
+                } finally {
+                    window.URL.revokeObjectURL(video.src);
+                }
+            };
+
             video.onloadedmetadata = function() {
-                window.URL.revokeObjectURL(video.src);
                 if (video.duration > 30) {
+                    window.URL.revokeObjectURL(video.src);
                     mostrarToast("Vídeo muito longo! Máximo de 30 segundos.", "erro");
                     input.value = '';
                     resetarPreviewVideo();
-                } else {
-                    // Mostra preview
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        previewVideo.src = e.target.result;
-                        previewVideo.style.display = 'block';
-                        icone.style.display = 'none';
-                        texto.innerText = 'Vídeo selecionado ✅';
-                        texto.style.color = '#28a745';
-                        label.style.borderColor = '#28a745';
-                        label.style.background = '#f0fff4';
-                    };
-                    reader.readAsDataURL(file);
                 }
             };
+            video.onloadeddata = function() {
+                if (video.duration > 30) return; // já tratado acima
+                // onloadeddata garante que já existe um frame pintado no
+                // buffer do vídeo, sem depender do evento 'seeked' — que
+                // é inconsistente no Safari/WKWebView.
+                capturarThumb();
+            };
             video.onerror = function() {
+                window.URL.revokeObjectURL(video.src);
                 mostrarToast("Erro ao carregar vídeo. Tente novamente.", "erro");
                 input.value = '';
                 resetarPreviewVideo();
             };
             video.src = URL.createObjectURL(file);
+            video.load();
         }
 
         function resetarPreviewVideo() {
-            const previewVideo = document.getElementById('videoPreview');
+            const previewVideo = document.getElementById('videoThumbPreview');
             const icone = document.getElementById('iconeVideoForm');
             const texto = document.getElementById('textoUploadVideo');
             const label = document.getElementById('labelUploadVideo');
+            const btnRemover = document.getElementById('btnRemoverVideo');
             if (!previewVideo) return;
             previewVideo.src = '';
             previewVideo.style.display = 'none';
@@ -1041,6 +1103,13 @@ function previewFotoForm(input) {
             texto.style.color = '#555';
             label.style.borderColor = '#ddd';
             label.style.background = '#fafafa';
+            if (btnRemover) btnRemover.style.display = 'none';
+        }
+
+        function removerVideoSelecionado() {
+            const input = document.getElementById('pVideo');
+            if (input) input.value = '';
+            resetarPreviewVideo();
         }
         function addConfigRow(containerId, valorNome = '', valorPreco = '') {
             const container = document.getElementById(containerId);

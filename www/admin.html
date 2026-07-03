@@ -1060,6 +1060,38 @@
                     <i class="fas fa-info-circle"></i> Digite com 55 + DDD + Número (somente números, sem espaços ou traços).
                 </small>
             </div>
+
+            <div class="config-card" style="margin-top:20px;">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+                    <div class="panel-icon" style="background:rgba(238,77,45,0.1); color:#ee4d2d;">
+                        <i class="fa-solid fa-video"></i>
+                    </div>
+                    <div>
+                        <h4>Configuração dos Planos — Limite de Vídeos</h4>
+                        <p style="margin:0;">Define quantos vídeos cada plano permite por padrão. Lojistas com limite personalizado (definido na ficha individual) não são afetados por esta configuração.</p>
+                    </div>
+                </div>
+                <div class="config-input-row" style="margin-top:16px; flex-direction:column; align-items:stretch; gap:10px;">
+                    <label style="font-size:12px; font-weight:600; color:var(--text);">
+                        Plano Básico
+                        <input type="number" id="inputLimiteVideoBasico" min="1" style="margin-top:4px; width:100%; box-sizing:border-box;">
+                    </label>
+                    <label style="font-size:12px; font-weight:600; color:var(--text);">
+                        Plano Premium
+                        <input type="number" id="inputLimiteVideoPremium" min="1" style="margin-top:4px; width:100%; box-sizing:border-box;">
+                    </label>
+                    <label style="font-size:12px; font-weight:600; color:var(--text);">
+                        Plano VIP
+                        <input type="number" id="inputLimiteVideoVip" min="1" style="margin-top:4px; width:100%; box-sizing:border-box;">
+                    </label>
+                    <button onclick="salvarLimitesDeVideoDosPlanos()" class="btn btn-approve" style="padding: 11px 20px; font-size:13px; margin-top:6px;">
+                        <i class="fas fa-save"></i> SALVAR LIMITES DOS PLANOS
+                    </button>
+                </div>
+                <small style="display:block; margin-top:8px; color:var(--muted); font-size:11px;">
+                    <i class="fas fa-info-circle"></i> Lojistas que usam o limite padrão do plano são atualizados automaticamente ao salvar.
+                </small>
+            </div>
         </section>
 
 <!-- ════════════════════════════
@@ -1218,6 +1250,14 @@
                         <option value="premium" ${u.planoAtivo === 'premium' ? 'selected' : ''}>Premium — R$55</option>
                         <option value="vip" ${u.planoAtivo === 'vip' ? 'selected' : ''}>VIP — R$75</option>
                     </select>
+                </div>
+                <div style="margin-top:6px; display:flex; align-items:center; gap:6px;">
+                    <label style="font-size:11px; color:var(--muted); white-space:nowrap;">
+                        <i class="fa-solid fa-video"></i> Limite vídeos:
+                    </label>
+                    <input type="number" min="1" placeholder="${regras.limiteVideos}" value="${u.limiteVideosPersonalizado || ''}"
+                        onchange="window.alterarLimiteVideoLojista('${id}', this.value)"
+                        style="width:60px; padding:4px 6px; font-size:12px; border:1px solid var(--border); border-radius:6px;">
                 </div>` : ''}
             </div>
             <div class="lojista-actions">
@@ -1353,7 +1393,7 @@
 </script>
 
 <script type="module">
-    import { db, GetRegrasLojista } from './config.js';
+    import { db, GetRegrasLojista, CONFIG_SISTEMA, salvarLimitesPlanos, limitesPlanosProntos } from './config.js';
     import { collection, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     /* ══════════════════════════════
@@ -1546,6 +1586,22 @@
         }
     };
 
+    window.alterarLimiteVideoLojista = async (id, valor) => {
+        const numero = parseInt(valor, 10);
+        try {
+            if (!numero || numero < 1) {
+                // Campo vazio ou inválido: remove o override, volta a usar o limite do plano
+                await updateDoc(doc(db, "usuarios", id), { limiteVideosPersonalizado: null });
+                alert("Limite personalizado removido — este lojista voltou a usar o limite do plano.");
+            } else {
+                await updateDoc(doc(db, "usuarios", id), { limiteVideosPersonalizado: numero });
+                alert(`Limite personalizado de ${numero} vídeos aplicado a este lojista.`);
+            }
+        } catch (e) {
+            alert("Erro ao alterar limite de vídeos.");
+        }
+    };
+
     /* ══════════════════════════════
        RESETAR SENHA
     ══════════════════════════════ */
@@ -1657,6 +1713,36 @@
             alert("Erro ao salvar. Verifique sua conexão.");
         }
     };
+
+    /* ══════════════════════════════
+       CONFIGURAÇÃO DOS PLANOS — LIMITE DE VÍDEOS
+    ══════════════════════════════ */
+    window.salvarLimitesDeVideoDosPlanos = async () => {
+        const basico = parseInt(document.getElementById('inputLimiteVideoBasico').value, 10);
+        const premium = parseInt(document.getElementById('inputLimiteVideoPremium').value, 10);
+        const vip = parseInt(document.getElementById('inputLimiteVideoVip').value, 10);
+
+        if (!basico || !premium || !vip || basico < 1 || premium < 1 || vip < 1) {
+            return alert("Preencha os três limites com números válidos (mínimo 1).");
+        }
+
+        try {
+            await salvarLimitesPlanos({ basico, premium, vip });
+            alert("Limites de vídeo dos planos atualizados GLOBALMENTE!");
+        } catch (e) {
+            alert("Erro ao salvar. Verifique sua conexão.");
+        }
+    };
+
+    (async () => {
+        await limitesPlanosProntos;
+        const campoBasico = document.getElementById('inputLimiteVideoBasico');
+        const campoPremium = document.getElementById('inputLimiteVideoPremium');
+        const campoVip = document.getElementById('inputLimiteVideoVip');
+        if (campoBasico) campoBasico.value = CONFIG_SISTEMA.planos.basico.limiteVideos;
+        if (campoPremium) campoPremium.value = CONFIG_SISTEMA.planos.premium.limiteVideos;
+        if (campoVip) campoVip.value = CONFIG_SISTEMA.planos.vip.limiteVideos;
+    })();
 
     /* ══════════════════════════════
        CARREGAR ZAP SUPORTE ATUAL

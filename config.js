@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { initializeFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { initializeFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // SUAS CREDENCIAIS ORIGINAIS (MANTIDAS)
 const firebaseConfig = {
@@ -108,6 +108,41 @@ export const CONFIG_SISTEMA = {
     }
 };
 
+// ============================================================
+// LIMITES DE VÍDEO POR PLANO — CONFIGURÁVEIS PELO ADMIN
+// Os valores acima em CONFIG_SISTEMA.planos[x].limiteVideos são o
+// FALLBACK usado enquanto o documento configuracoes/limitesPlanos
+// ainda não existir ou não tiver sido carregado. Assim que o Firestore
+// responde, esses valores são sobrescritos em memória — síncrono para
+// todo código que já lê CONFIG_SISTEMA.planos, sem exigir await.
+// Lojistas com limiteVideosPersonalizado no próprio documento (coleção
+// "usuarios") ignoram este valor de plano — ver GetRegrasLojista abaixo.
+// ============================================================
+export const limitesPlanosProntos = (async () => {
+    try {
+        const snap = await getDoc(doc(db, "configuracoes", "limitesPlanos"));
+        if (snap.exists()) {
+            const dados = snap.data();
+            ["basico", "premium", "vip"].forEach((chave) => {
+                if (typeof dados[chave] === "number" && dados[chave] > 0) {
+                    CONFIG_SISTEMA.planos[chave].limiteVideos = dados[chave];
+                }
+            });
+        }
+    } catch (e) {
+        console.warn("Não foi possível carregar limites de vídeo personalizados — usando padrão do sistema.", e);
+    }
+})();
+
+export async function salvarLimitesPlanos(novosLimites) {
+    await setDoc(doc(db, "configuracoes", "limitesPlanos"), novosLimites, { merge: true });
+    Object.entries(novosLimites).forEach(([chave, valor]) => {
+        if (CONFIG_SISTEMA.planos[chave] && typeof valor === "number" && valor > 0) {
+            CONFIG_SISTEMA.planos[chave].limiteVideos = valor;
+        }
+    });
+}
+
 /**
  * LÓGICA DE VALIDAÇÃO DE PERMISSÕES (HELPERS)
  */
@@ -144,6 +179,9 @@ const diasRestantes = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
         vencido: diasRestantes <= 0,
         limiteProdutos: configuracaoPlano.limiteProdutos,
         limiteTurbos: configuracaoPlano.limiteTurbos,
+        limiteVideos: (typeof dadosLojista?.limiteVideosPersonalizado === "number" && dadosLojista.limiteVideosPersonalizado > 0)
+            ? dadosLojista.limiteVideosPersonalizado
+            : configuracaoPlano.limiteVideos,
         podeAdicionarFoto: (qtdAtual) => qtdAtual < configuracaoPlano.limiteFotosPorProduto,
         temAcessoTurbo: configuracaoPlano.temDireitoTurbo,
         corPlano: configuracaoPlano.cor,

@@ -52,8 +52,8 @@ async function contarVideosDoLojista() {
 
 async function verificarLimiteVideo() {
     if (!userData) return { permitido: true, atual: 0, limite: 999 };
-    const plano = userData.planoAtivo || "basico";
-    const limite = CONFIG_SISTEMA?.planos?.[plano]?.limiteVideos ?? 2;
+    const regras = GetRegrasLojista(userData);
+    const limite = regras.limiteVideos;
     const atual = await contarVideosDoLojista();
     return { permitido: atual < limite, atual, limite };
 }
@@ -207,6 +207,25 @@ window.switchTab = (tab) => {
 
 window.trocarContexto = (contexto) => {
     contextoAtual = contexto;
+
+    document.getElementById('pNome').value = "";
+    document.getElementById('pPreco').value = "";
+    document.getElementById('pDesc').value = "";
+    document.getElementById('pFoto').value = "";
+    document.getElementById('pTipo').value = "";
+    document.querySelectorAll('input[name="tam"]:checked').forEach(el => el.checked = false);
+    const pNumeracaoReset = document.getElementById('pNumeracao');
+    if (pNumeracaoReset) pNumeracaoReset.value = "";
+    const pPermiteMontarReset = document.getElementById('pPermiteMontar');
+    if (pPermiteMontarReset) pPermiteMontarReset.checked = false;
+    const listaAdicionaisReset = document.getElementById('lista-adicionais-produto');
+    if (listaAdicionaisReset) listaAdicionaisReset.innerHTML = "";
+    const areaRoupaReset = document.getElementById('area-roupa-config');
+    if (areaRoupaReset) areaRoupaReset.style.display = 'none';
+    if (window.resetarPreviewFoto) resetarPreviewFoto();
+    const videoInputResetCtx = document.getElementById('pVideo');
+    if (videoInputResetCtx) videoInputResetCtx.value = "";
+    if (window.resetarPreviewVideo) resetarPreviewVideo();
     
     // AJUSTE: Atualiza o texto visual do botão de gatilho (o card que abre o form)
     const txtBtnGatilho = document.getElementById('txtBtnPublicarContexto');

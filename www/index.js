@@ -98,6 +98,12 @@ const MAPAS_FILTROS = {
         'celulares': ['celular', 'smartphone', 'iphone', 'samsung', 'xiaomi', 'motorola', 'redmi', 'android', 'ios', 'capinha', 'carregador'],
         'ferramentas': ['ferramenta', 'furadeira', 'makita', 'serra', 'pa', 'martelo', 'chave', 'parafusadeira', 'trena', 'alicate'],
         'cosméticos': ['batom', 'perfume', 'desodorante', 'creme', 'hidratante', 'maquiagem', 'shampoo', 'condicionador', 'esmalte', 'beleza', 'cosmetico'],
+        'moda feminina': ['vestido', 'blusa feminina', 'saia', 'macacão feminino', 'macacao feminino', 'cropped', 'legging', 'short feminino', 'moda feminina', 'roupa feminina', 'conjunto feminino'],
+        'moda masculina': ['camisa masculina', 'camiseta masculina', 'bermuda', 'polo masculina', 'moda masculina', 'roupa masculina', 'calça masculina', 'calca masculina', 'regata masculina'],
+        'moda infantil': ['roupa infantil', 'moda infantil', 'body bebê', 'body bebe', 'macacão infantil', 'macacao infantil', 'conjunto infantil', 'roupa de bebê', 'roupa de bebe', 'roupa criança', 'roupa crianca'],
+        'calçados': ['sapato', 'tênis', 'tenis', 'sandália', 'sandalia', 'chinelo', 'sapatilha', 'bota', 'calçado', 'calcado', 'salto', 'rasteirinha'],
+        'bolsas': ['bolsa', 'mochila', 'carteira', 'necessaire', 'clutch', 'bolsa feminina', 'bolsa transversal'],
+        'bijuterias': ['bijuteria', 'colar', 'brinco', 'pulseira', 'anel', 'pingente', 'piercing', 'acessório', 'acessorio', 'joia folheada', 'semijoia'],
         'promoção': ['promoção', 'promocao', 'oferta', 'queima', 'desconto', 'liquidando', 'barato', 'off']
     },
     'restaurants': {
@@ -119,7 +125,7 @@ const MAPAS_FILTROS = {
 };
 
 const CHIPS_POR_MODO = {
-    'products': ['Todos', 'Eletrônicos', 'Celulares', 'Ferramentas', 'Cosméticos', 'Promoção'],
+    'products': ['Todos', 'Eletrônicos', 'Celulares', 'Ferramentas', 'Cosméticos', 'Moda Feminina', 'Moda Masculina', 'Moda Infantil', 'Calçados', 'Bolsas', 'Bijuterias', 'Promoção'],
     'restaurants': ['Todos', 'Lanches', 'Bebidas', 'Sorvetes', 'Doces', 'Salgados', 'Fitness', 'Promoção'],
     'classifieds': ['Todos', 'Veículos', 'Imóveis', 'Animais', 'Máquinas', 'Outros']
 };
@@ -545,6 +551,7 @@ function renderizarFiltros() {
     if (!container) return;
     container.innerHTML = CHIPS_POR_MODO[modoAtual].map((nome, index) => `
         <div class="filter-chip ${normalizar(nome) === filtroChip || (filtroChip === '' && index === 0) ? 'active' : ''}" 
+             data-chip-nome="${nome}"
              onclick="filtrarPorPalavra('${nome === 'Todos' ? '' : nome}', this)">
             ${nome}
         </div>`).join('');
@@ -1219,21 +1226,6 @@ function garantirRenderizacaoValida() {
     }
     if (track && track.children.length === 0 && todosProdutos.length > 0) {
         try { inicializarArialProdutos(); } catch (e) { console.error('Retentativa de inicializarArialProdutos falhou:', e); }
-    }
-
-    // Remede a altura real do header e dos filtros agora que os filtros
-    // reais (não mais o skeleton) já existem no DOM. A medição inicial
-    // (DOMContentLoaded, no index.html) acontece antes disso e captura só o
-    // skeleton; sem este recálculo, o header fica com altura errada em
-    // aparelhos com notch/Dynamic Island e cobre os filtros por cima.
-    if (document.body.classList.contains('is-capacitor-app')) {
-        const header = document.getElementById('dynamicHeader');
-        if (header) {
-            document.documentElement.style.setProperty('--pedeai-header-height', header.offsetHeight + 'px');
-        }
-        if (chips) {
-            document.documentElement.style.setProperty('--pedeai-filters-height', chips.offsetHeight + 'px');
-        }
     }
 }
 

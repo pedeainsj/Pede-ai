@@ -58,7 +58,7 @@
         
         header { 
     background: var(--shopee-orange); 
-    padding: 12px 16px; 
+    padding: 10px 16px 12px; 
     position: sticky; 
     top: 0; 
     z-index: 1000; 
@@ -70,33 +70,44 @@
         .logo-container { 
             display: flex; 
             align-items: center; 
-            gap: 8px; 
-            font-size: 22px; 
+            gap: 7px; 
+            font-size: 19px; 
             font-weight: 900; 
-            letter-spacing: -1px;
+            letter-spacing: -0.6px;
         }
-        .logo-container i { font-size: 18px; opacity: 0.9; }
+        .logo-container i { font-size: 16px; opacity: 0.9; }
 
-        .header-top a { font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.2); padding: 6px 14px; border-radius: 20px; color: white; text-decoration: none; }
+        .header-top a { font-size: 11px; font-weight: 700; background: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px; color: white; text-decoration: none; }
         
+        .search-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            max-width: 1200px;
+            margin: 10px auto 0;
+        }
+
         .search-box { 
             background: rgba(255,255,255,1); 
             display: flex; 
             align-items: center; 
-            padding: 10px 14px; 
-            border-radius: 8px; 
-            max-width: 1200px; 
-            margin: 12px auto 4px;
+            padding: 8px 12px; 
+            border-radius: 10px; 
+            flex: 1;
+            min-width: 0;
         }
-        .search-box input { border: none; outline: none; width: 100%; margin-left: 10px; font-size: 14px; color: #333; }
+        .search-box input { border: none; outline: none; width: 100%; margin-left: 9px; font-size: 14px; color: #333; }
+        .search-box i { font-size: 13px; }
 
         .featured-strip { 
             background: var(--shopee-orange); 
-            padding: 8px 0 16px; 
+            padding: 8px 0 14px; 
             overflow: hidden; 
             position: relative;
             max-height: 140px; 
         }
+        body.mode-restaurants .featured-strip { background: var(--food-red); }
+        body.mode-classifieds .featured-strip { background: var(--used-blue); }
         
         .carousel-track { 
             display: flex; 
@@ -140,35 +151,320 @@
             border-radius: 4px;
         }
 
-        .quick-filters { 
-            background: white; 
-            padding: 14px 0; 
-            border-bottom: 1px solid #f0f0f0; 
-            overflow-x: auto; 
-            white-space: nowrap; 
-            scrollbar-width: none;
-            position: -webkit-sticky;
-            position: sticky;
-            top: 104px; 
-            z-index: 900;
+        .filter-toggle-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: rgba(255,255,255,0.18);
+            border: 1px solid rgba(255,255,255,0.32);
+            color: white;
+            font-size: 12.5px;
+            font-weight: 700;
+            padding: 0 14px;
+            height: 38px;
+            border-radius: 10px;
+            flex-shrink: 0;
+            cursor: pointer;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            transition: background 0.15s ease, transform 0.1s ease;
         }
-        body.is-capacitor-app .quick-filters {
+        .filter-toggle-btn i { font-size: 13px; opacity: 0.95; }
+        .filter-toggle-btn span { display: none; }
+        .filter-toggle-btn:active { background: rgba(255,255,255,0.3); transform: scale(0.96); }
+        @media (min-width: 380px) {
+            .filter-toggle-btn span { display: inline; }
+        }
+
+        .filter-modal-overlay {
+            display: none;
             position: fixed;
-            top: var(--pedeai-header-height, 104px);
-            left: 0;
-            right: 0;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 5000;
+            align-items: flex-end;
+            justify-content: center;
         }
-        body.is-capacitor-app .container {
-            margin-top: calc(var(--pedeai-filters-height, 58px) + 16px);
+        .filter-modal-overlay.show { display: flex; }
+        .filter-modal-sheet {
+            background: white;
+            width: 100%;
+            max-width: 560px;
+            border-radius: 20px 20px 0 0;
+            padding: 18px 18px calc(env(safe-area-inset-bottom) + 18px);
+            max-height: 70vh;
+            overflow-y: auto;
+            animation: filterSheetUp 0.22s ease-out;
         }
-        .quick-filters::-webkit-scrollbar { display: none; }
+        @keyframes filterSheetUp {
+            from { transform: translateY(16px); opacity: 0.6; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
+        .filter-modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+        }
+        .filter-modal-title { font-size: 16px; font-weight: 800; color: var(--text-main); }
+        .filter-modal-close {
+            background: #f2f2f2;
+            border: none;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            color: #666;
+            font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+
+        .quick-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
 
         .filter-chip { 
-            display: inline-block; padding: 8px 18px; background: #f2f2f2; 
+            display: inline-block; padding: 9px 18px; background: #f2f2f2; 
             border-radius: 20px; font-size: 13px; font-weight: 500; color: #555; 
-            margin-left: 10px; cursor: pointer;
+            cursor: pointer;
         }
         .filter-chip.active { background: var(--shopee-orange); color: white; }
+        body.mode-restaurants .filter-chip.active { background: var(--food-red); }
+        body.mode-classifieds .filter-chip.active { background: var(--used-blue); }
+
+        .promo-banner {
+            margin: 0;
+            padding: 0;
+            position: relative;
+            z-index: 1;
+        }
+        .promo-banner-inner {
+            position: relative;
+            overflow: hidden;
+            border-radius: 0;
+            padding: 12px 16px;
+            min-height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            animation: promoPulse 3s ease-in-out infinite;
+        }
+
+        /* ---- Tema Produtos (laranja / compras) ---- */
+        body.mode-products .promo-banner-inner {
+            background: linear-gradient(120deg, #ff7a54 0%, #ee4d2d 45%, #c93212 100%);
+            box-shadow: 0 8px 18px rgba(216,57,15,0.30), inset 0 1px 0 rgba(255,255,255,0.18);
+        }
+        body.mode-products .promo-banner-inner::before {
+            background: linear-gradient(to bottom, var(--shopee-orange) 0%, rgba(238,77,45,0) 100%);
+        }
+        /* ---- Tema Gourmet (vermelho / comida) ---- */
+        body.mode-restaurants .promo-banner-inner {
+            background: linear-gradient(120deg, #ffb15e 0%, #ea1d2c 48%, #7d0f16 100%);
+            box-shadow: 0 8px 18px rgba(125,15,22,0.32), inset 0 1px 0 rgba(255,255,255,0.18);
+        }
+        body.mode-restaurants .promo-banner-inner::before {
+            background: linear-gradient(to bottom, var(--food-red) 0%, rgba(234,29,44,0) 100%);
+        }
+        .promo-banner-inner::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 22px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .promo-banner-glow, .promo-banner-badge, .promo-banner-deco {
+            z-index: 1;
+        }
+
+        /* O tema Anúncios não possui banner de promoções */
+        body.mode-classifieds .promo-banner { display: none !important; }
+
+        /* Cada tema mostra apenas o banner correspondente à sua identidade */
+        .promo-theme-products, .promo-theme-gourmet { display: none; }
+        body.mode-products .promo-theme-products { display: flex; }
+        body.mode-restaurants .promo-theme-gourmet { display: flex; }
+
+        @keyframes promoPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.006); }
+        }
+        .promo-banner-inner::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -60%;
+            width: 35%; height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.32), transparent);
+            transform: skewX(-20deg);
+            animation: promoShine 3.6s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes promoShine {
+            0%   { left: -60%; }
+            55%  { left: 130%; }
+            100% { left: 130%; }
+        }
+        .promo-banner-glow {
+            position: absolute;
+            width: 110px; height: 110px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.35), transparent 70%);
+            top: -36px; right: -24px;
+            filter: blur(2px);
+            animation: promoGlow 4s ease-in-out infinite;
+            pointer-events: none;
+        }
+        @keyframes promoGlow {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(1.1); }
+        }
+        .promo-banner-deco {
+            position: absolute;
+            inset: 0;
+            display: block;
+            opacity: 0.92;
+            pointer-events: none;
+        }
+        .promo-banner-deco svg { display: block; position: absolute; filter: drop-shadow(0 3px 6px rgba(0,0,0,0.18)); }
+        .promo-banner-deco .promo-deco-1 {
+            bottom: 4px;
+            right: 34px;
+            opacity: 0.8;
+            animation: decoFloat 3.4s ease-in-out infinite;
+        }
+        .promo-banner-deco .promo-deco-2 {
+            top: 40px;
+            right: 8px;
+            opacity: 0.5;
+            animation: decoFloat 3.4s ease-in-out 0.5s infinite;
+        }
+        .promo-banner-deco .promo-deco-3 {
+            top: 50%;
+            right: 4px;
+            transform: translateY(-50%);
+            opacity: 0.85;
+            animation: decoFloatMid 3.4s ease-in-out 1s infinite;
+        }
+        @keyframes decoFloat {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
+        @keyframes decoFloatMid {
+            0%, 100% { transform: translateY(-50%); }
+            50% { transform: translateY(calc(-50% - 3px)); }
+        }
+        .promo-banner-deco-left {
+            inset: 0;
+            display: block;
+        }
+        .promo-banner-deco-left .promo-deco-left-1 {
+            top: 6px;
+            left: 10px;
+            position: absolute;
+            opacity: 0.6;
+            animation: decoPulseRotate 3.8s ease-in-out infinite;
+        }
+        .promo-banner-deco-left .promo-deco-left-2 {
+            bottom: 6px;
+            left: 16px;
+            position: absolute;
+            opacity: 0.85;
+            animation: decoFadeRotate 4.2s ease-in-out 0.6s infinite;
+        }
+        @keyframes decoPulseRotate {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.85; }
+            50% { transform: scale(1.12) rotate(6deg); opacity: 1; }
+        }
+        @keyframes decoFadeRotate {
+            0%, 100% { transform: rotate(0deg); opacity: 0.55; }
+            50% { transform: rotate(-8deg); opacity: 0.95; }
+        }
+        .promo-banner-badge {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.22);
+            border: 1px solid rgba(255,255,255,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 900;
+            backdrop-filter: blur(4px);
+            animation: percentSpin 5s ease-in-out infinite;
+        }
+        @keyframes percentSpin {
+            0%, 100% { transform: rotate(0deg) scale(1); }
+            50% { transform: rotate(10deg) scale(1.06); }
+        }
+        .promo-banner-content {
+            position: relative;
+            z-index: 2;
+            max-width: 88%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        @media (max-width: 360px) {
+            .promo-banner-content { max-width: 82%; }
+            .promo-banner-deco svg { transform: scale(0.8); }
+        }
+        .promo-banner-tag {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            background: rgba(255,255,255,0.22);
+            border: 1px solid rgba(255,255,255,0.35);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.4px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        .promo-banner-title {
+            color: white;
+            font-size: 14.5px;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 2px;
+            min-height: 19px;
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+        .promo-banner-title.fade { opacity: 0; transform: translateY(4px); }
+        .promo-banner-subtitle {
+            color: rgba(255,255,255,0.92);
+            font-size: 11px;
+            margin-bottom: 8px;
+            line-height: 1.3;
+            text-align: center;
+        }
+        .promo-banner-cta {
+            display: inline-block;
+            background: white;
+            color: var(--shopee-orange);
+            font-size: 10.5px;
+            font-weight: 800;
+            letter-spacing: 0.3px;
+            padding: 6px 13px;
+            border-radius: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+        }
+        body.mode-restaurants .promo-banner-cta { color: var(--food-red); }
 
         .container { max-width: 1200px; margin: 16px auto; padding: 0 12px; }
         .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; contain: layout; }
@@ -347,31 +643,6 @@
 <body data-index-page="true" class="mode-products">
     <script>
         (function() {
-            // Detecta o app iOS/Android (Capacitor) para aplicar o fix de
-            // posicionamento fixo da barra de filtros. Precisa rodar antes do
-            // primeiro paint (topo do body) para não haver flash com sticky.
-            if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-                document.body.classList.add('is-capacitor-app');
-
-                // Mede a altura real do header (varia por aparelho: notch,
-                // Dynamic Island, safe-area-inset-top) assim que o DOM estiver
-                // pronto, para que .quick-filters e .container usem os valores
-                // corretos já na primeira abertura, em vez de um 104px fixo
-                // que só é correto em alguns modelos de iPhone.
-                document.addEventListener('DOMContentLoaded', function() {
-                    requestAnimationFrame(function() {
-                        var header = document.getElementById('dynamicHeader');
-                        var chips = document.getElementById('chipContainer');
-                        if (header) {
-                            document.documentElement.style.setProperty('--pedeai-header-height', header.offsetHeight + 'px');
-                        }
-                        if (chips) {
-                            document.documentElement.style.setProperty('--pedeai-filters-height', chips.offsetHeight + 'px');
-                        }
-                    });
-                });
-            }
-
             // Controle de splash: exibe apenas uma vez por sessão.
             // Usa classe no <body>, pois a div da splash ainda não existe
             // no DOM neste ponto do parsing — getElementById aqui sempre falhava.
@@ -452,11 +723,30 @@
             </span>
             <a href="login.html">QUERO VENDER</a>
         </div>
-        <div class="search-box">
-            <i class="fas fa-search" style="color: #bbb;"></i>
-            <input type="text" id="inputBusca" placeholder="Busque produtos ou pratos..." enterkeyhint="search" style="font-size: 16px; -webkit-appearance: none;">
+        <div class="search-row">
+            <div class="search-box">
+                <i class="fas fa-search" style="color: #bbb;"></i>
+                <input type="text" id="inputBusca" placeholder="Busque produtos ou pratos..." enterkeyhint="search" style="font-size: 16px; -webkit-appearance: none;">
+            </div>
+            <button type="button" class="filter-toggle-btn" onclick="window.abrirFiltroModal()">
+                <i class="fas fa-sliders"></i><span>Filtros</span>
+            </button>
         </div>
     </header>
+
+    <div id="filterModalOverlay" class="filter-modal-overlay" onclick="if(event.target===this) window.fecharFiltroModal()">
+        <div class="filter-modal-sheet">
+            <div class="filter-modal-header">
+                <span class="filter-modal-title">Filtrar produtos</span>
+                <button type="button" class="filter-modal-close" onclick="window.fecharFiltroModal()">
+                    <i class="fas fa-xmark"></i>
+                </button>
+            </div>
+            <div class="quick-filters" id="chipContainer" data-skeleton="true">
+                <span class="skeleton-chip"></span><span class="skeleton-chip"></span><span class="skeleton-chip"></span><span class="skeleton-chip"></span>
+            </div>
+        </div>
+    </div>
 
     <div class="featured-strip" id="featuredStrip"
      style="contain: layout paint;">
@@ -467,9 +757,95 @@
         </div>
     </div>
 
-    <div class="quick-filters" id="chipContainer" data-skeleton="true" style="-webkit-overflow-scrolling: touch;">
-        <span class="skeleton-chip"></span><span class="skeleton-chip"></span><span class="skeleton-chip"></span><span class="skeleton-chip"></span>
+    <div class="promo-banner" id="promoBanner">
+
+        <!-- Banner tema PRODUTOS: sacolas, etiqueta, presente, desconto -->
+        <div class="promo-banner-inner promo-theme-products" onclick="window.abrirPromoBanner()">
+            <div class="promo-banner-glow"></div>
+            <div class="promo-banner-badge">%</div>
+
+            <div class="promo-banner-content">
+                <span class="promo-banner-tag">Oferta especial</span>
+                <div class="promo-banner-title" id="promoBannerTitleProdutos">🔥 Promoções do dia</div>
+                <div class="promo-banner-subtitle">Economize hoje! Confira os produtos em oferta.</div>
+                <span class="promo-banner-cta">VER OFERTAS</span>
+            </div>
+
+            <div class="promo-banner-deco promo-banner-deco-left" aria-hidden="true">
+                <svg class="promo-deco-left-1" width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="7" width="14" height="4" rx="2" fill="rgba(255,255,255,0.24)" stroke="rgba(255,255,255,0.8)" stroke-width="1.1"/>
+                    <path d="M17 9h3l1 2-1 2h-3" stroke="rgba(255,255,255,0.8)" stroke-width="1.1" fill="rgba(255,255,255,0.18)"/>
+                    <circle cx="7" cy="9" r="0.9" fill="rgba(255,255,255,0.9)"/>
+                </svg>
+                <svg class="promo-deco-left-2" width="17" height="17" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 4c3 2 7 4 7 9a7 7 0 0 1-14 0c0-5 4-7 7-9z" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.75)" stroke-width="1.1"/>
+                </svg>
+            </div>
+
+            <div class="promo-banner-deco" aria-hidden="true">
+                <svg class="promo-deco-1" width="30" height="30" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 8h12l-1 12.5a1.5 1.5 0 0 1-1.5 1.5h-8a1.5 1.5 0 0 1-1.5-1.5L6 8z" fill="rgba(255,255,255,0.28)" stroke="rgba(255,255,255,0.85)" stroke-width="1.2"/>
+                    <path d="M9 8V6a3 3 0 0 1 6 0v2" stroke="rgba(255,255,255,0.85)" stroke-width="1.2" fill="none"/>
+                </svg>
+                <svg class="promo-deco-2" width="23" height="23" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 8h12l-1 12.5a1.5 1.5 0 0 1-1.5 1.5h-8a1.5 1.5 0 0 1-1.5-1.5L6 8z" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.7)" stroke-width="1.2"/>
+                    <path d="M9 8V6a3 3 0 0 1 6 0v2" stroke="rgba(255,255,255,0.7)" stroke-width="1.2" fill="none"/>
+                </svg>
+                <svg class="promo-deco-3" width="27" height="27" viewBox="0 0 24 24" fill="none">
+                    <rect x="4" y="10" width="16" height="10" rx="1.2" fill="rgba(255,255,255,0.26)" stroke="rgba(255,255,255,0.85)" stroke-width="1.2"/>
+                    <rect x="4" y="7" width="16" height="3.5" rx="1" fill="rgba(255,255,255,0.32)" stroke="rgba(255,255,255,0.85)" stroke-width="1.2"/>
+                    <path d="M12 7v13" stroke="rgba(255,255,255,0.85)" stroke-width="1.2"/>
+                    <path d="M12 7c-1.5 0-3-1-3-2.5S10 2 11 2.5 12 5 12 7z" fill="rgba(255,255,255,0.3)" stroke="rgba(255,255,255,0.85)" stroke-width="1"/>
+                    <path d="M12 7c1.5 0 3-1 3-2.5S14 2 13 2.5 12 5 12 7z" fill="rgba(255,255,255,0.3)" stroke="rgba(255,255,255,0.85)" stroke-width="1"/>
+                </svg>
+            </div>
+        </div>
+
+        <!-- Banner tema GOURMET: hambúrguer, pizza, bebida -->
+        <div class="promo-banner-inner promo-theme-gourmet" onclick="window.abrirPromoBanner()">
+            <div class="promo-banner-glow"></div>
+            <div class="promo-banner-badge"><i class="fas fa-motorcycle" style="font-size:12px;"></i></div>
+
+            <div class="promo-banner-content">
+                <span class="promo-banner-tag">Fome agora?</span>
+                <div class="promo-banner-title" id="promoBannerTitleGourmet">🍔 Ofertas do Gourmet</div>
+                <div class="promo-banner-subtitle">Peça já e aproveite descontos especiais.</div>
+                <span class="promo-banner-cta">VER OFERTAS</span>
+            </div>
+
+            <div class="promo-banner-deco promo-banner-deco-left" aria-hidden="true">
+                <svg class="promo-deco-left-1" width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 8h11v6a5.5 5.5 0 0 1-5.5 5.5v0A5.5 5.5 0 0 1 6 14V8z" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.78)" stroke-width="1.1"/>
+                    <path d="M17 9.5h1.8a2 2 0 0 1 0 4H17" stroke="rgba(255,255,255,0.78)" stroke-width="1.1" fill="none"/>
+                    <path d="M9 4.5c.3.7-.3 1-.3 1.7M12 4.2c.3.7-.3 1-.3 1.7" stroke="rgba(255,255,255,0.6)" stroke-width="1"/>
+                </svg>
+                <svg class="promo-deco-left-2" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <ellipse cx="12" cy="9" rx="8" ry="4.5" fill="rgba(255,255,255,0.2)" stroke="rgba(255,255,255,0.75)" stroke-width="1.1"/>
+                    <path d="M4 9c0 4 3.5 9 8 9s8-5 8-9" stroke="rgba(255,255,255,0.6)" stroke-width="1" fill="none"/>
+                </svg>
+            </div>
+
+            <div class="promo-banner-deco" aria-hidden="true">
+                <svg class="promo-deco-1" width="27" height="27" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 10a8 8 0 0 1 16 0z" fill="rgba(255,255,255,0.28)" stroke="rgba(255,255,255,0.85)" stroke-width="1.2"/>
+                    <rect x="3" y="10" width="18" height="2.4" rx="1.2" fill="rgba(255,255,255,0.85)"/>
+                    <path d="M4.5 14h15l-1 3.5a2 2 0 0 1-1.9 1.5H7.4a2 2 0 0 1-1.9-1.5L4.5 14z" fill="rgba(255,255,255,0.24)" stroke="rgba(255,255,255,0.85)" stroke-width="1.2"/>
+                </svg>
+                <svg class="promo-deco-2" width="26" height="26" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3 21 20H3z" fill="rgba(255,255,255,0.24)" stroke="rgba(255,255,255,0.85)" stroke-width="1.2" stroke-linejoin="round"/>
+                    <circle cx="12" cy="12" r="1.1" fill="rgba(255,255,255,0.9)"/>
+                    <circle cx="10" cy="15.5" r="1" fill="rgba(255,255,255,0.9)"/>
+                    <circle cx="14.5" cy="15" r="1" fill="rgba(255,255,255,0.9)"/>
+                </svg>
+                <svg class="promo-deco-3" width="20" height="26" viewBox="0 0 24 30" fill="none">
+                    <path d="M7 4h10l-1.2 8.5a3.8 3.8 0 0 1-3.8 3.3v0a3.8 3.8 0 0 1-3.8-3.3L7 4z" fill="rgba(255,255,255,0.26)" stroke="rgba(255,255,255,0.85)" stroke-width="1.2"/>
+                    <path d="M12 15.8v9.2M9 25h6" stroke="rgba(255,255,255,0.85)" stroke-width="1.2"/>
+                </svg>
+            </div>
+        </div>
+
     </div>
+
 
     <div class="container" id="products-container">
         <div id="grid-produtos" class="grid-container" data-skeleton="true">
@@ -552,6 +928,110 @@
     <script src="./overlay.js"></script>
 
     <script>
+        // Abre/fecha o modal de filtros. Não cria nenhuma lógica de filtro nova —
+        // o conteúdo do modal é o mesmo #chipContainer já populado por
+        // renderizarFiltros() em index.js, apenas reposicionado visualmente.
+        window.abrirFiltroModal = function() {
+            const overlay = document.getElementById('filterModalOverlay');
+            if (overlay) overlay.classList.add('show');
+        };
+        window.fecharFiltroModal = function() {
+            const overlay = document.getElementById('filterModalOverlay');
+            if (overlay) overlay.classList.remove('show');
+        };
+
+        // O banner de promoções é apenas um segundo caminho para o mesmo
+        // filtro "Promoção" que já existe nos chips — reusa window.filtrarPorPalavra
+        // (definida em index.js) em vez de duplicar a lógica de filtragem.
+        // Ao clicar, o filtro é aplicado e o banner some (ver observer abaixo),
+        // deixando a tela: Pesquisa → Carrossel → Produtos em promoção.
+        window.abrirPromoBanner = function() {
+            const chipPromocao = document.querySelector('#chipContainer .filter-chip[data-chip-nome="Promoção"]');
+            if (chipPromocao && window.filtrarPorPalavra) {
+                window.filtrarPorPalavra('Promoção', chipPromocao);
+            }
+        };
+
+        // Mostra/esconde o banner de promoções puramente por CSS, com base em
+        // qual chip está com a classe "active" (classe já controlada por
+        // index.js/filtrarPorPalavra — aqui apenas observamos, sem alterar nada).
+        // O banner some quando o chip ativo é "Promoção" e volta a aparecer em
+        // qualquer outro filtro (incluindo "Todos").
+        (function() {
+            const promoBanner = document.getElementById('promoBanner');
+            const chipContainer = document.getElementById('chipContainer');
+            if (!promoBanner || !chipContainer) return;
+
+            function atualizarVisibilidadeBanner() {
+                const chipAtivo = chipContainer.querySelector('.filter-chip.active');
+                const nomeChipAtivo = chipAtivo ? chipAtivo.getAttribute('data-chip-nome') : null;
+                const filtroPromocaoAtivo = nomeChipAtivo === 'Promoção';
+                promoBanner.style.display = filtroPromocaoAtivo ? 'none' : '';
+            }
+
+            atualizarVisibilidadeBanner();
+
+            const observer = new MutationObserver(atualizarVisibilidadeBanner);
+            observer.observe(chipContainer, {
+                attributes: true,
+                attributeFilter: ['class'],
+                subtree: true,
+                childList: true
+            });
+
+            // Reavalia também quando o modo muda (chips são re-renderizados do zero)
+            window.addEventListener('changeMode', function() {
+                setTimeout(atualizarVisibilidadeBanner, 0);
+            });
+        })();
+
+        // Alternância puramente visual das mensagens dos banners de promoções
+        // (um conjunto de frases para Produtos, outro para Gourmet).
+        // Não interfere em filtros, Firestore ou qualquer outra lógica —
+        // apenas troca o texto exibido nos títulos a cada intervalo.
+        (function() {
+            const mensagensProdutos = [
+                '🔥 Promoções do dia',
+                '💸 Economize hoje',
+                '🛍️ Confira as melhores ofertas',
+                '🎁 Descontos exclusivos',
+                '✨ Destaques da semana'
+            ];
+            const mensagensGourmet = [
+                '🍔 Ofertas do Gourmet',
+                '🍕 Peça sua comida favorita',
+                '🍽️ Confira os restaurantes',
+                '😋 Sabores que você vai amar',
+                '☕ Cafés e sobremesas especiais',
+                '🔥 Promoções do dia'
+            ];
+
+            function iniciarRotacao(elementId, mensagens) {
+                const el = document.getElementById(elementId);
+                if (!el) return;
+                let indice = 0;
+                setInterval(function() {
+                    indice = (indice + 1) % mensagens.length;
+                    el.classList.add('fade');
+                    setTimeout(function() {
+                        el.textContent = mensagens[indice];
+                        el.classList.remove('fade');
+                    }, 300);
+                }, 3200);
+            }
+
+            iniciarRotacao('promoBannerTitleProdutos', mensagensProdutos);
+            iniciarRotacao('promoBannerTitleGourmet', mensagensGourmet);
+        })();
+
+        // Fecha o modal ao escolher um chip, sem alterar a lógica de filtragem
+        // em si (que continua inteiramente em window.filtrarPorPalavra).
+        document.getElementById('chipContainer')?.addEventListener('click', function(e) {
+            if (e.target.closest('.filter-chip')) {
+                window.fecharFiltroModal();
+            }
+        });
+
         function setAppMode(mode, element) {
             if (element.classList.contains('active')) return;
 
@@ -574,7 +1054,7 @@
         requestAnimationFrame(function() {
 document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
 element.classList.add('active');
-document.body.className = (document.body.classList.contains('is-capacitor-app') ? 'is-capacitor-app ' : '') + 'mode-' + mode;
+document.body.className = 'mode-' + mode;
 const modoAnterior = sessionStorage.getItem('pedeai_mode');
 sessionStorage.setItem('pedeai_mode', mode);
 // Só invalida o cache DOM ao trocar entre products/restaurants.
@@ -628,7 +1108,7 @@ setTimeout(() => {
         (function() {
             const savedMode = sessionStorage.getItem('pedeai_mode');
             if (savedMode) {
-                document.body.className = (document.body.classList.contains('is-capacitor-app') ? 'is-capacitor-app ' : '') + 'mode-' + savedMode;
+                document.body.className = 'mode-' + savedMode;
             }
 
             // FUNÇÃO PARA REMOVER O SPLASH IMEDIATAMENTE (sem animação)
@@ -711,7 +1191,7 @@ setTimeout(() => {
                     document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
                     const navAtivo = document.getElementById(`nav-${modoRestaurado}`);
                     if (navAtivo) navAtivo.classList.add('active');
-                    document.body.className = (document.body.classList.contains('is-capacitor-app') ? 'is-capacitor-app ' : '') + 'mode-' + modoRestaurado;
+                    document.body.className = 'mode-' + modoRestaurado;
 
                     // Atualiza a cor da barra de status (meta tag theme-color) imediatamente
                     const themeColorMeta = document.querySelector('meta[name="theme-color"]');

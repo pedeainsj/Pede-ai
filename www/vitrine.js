@@ -641,17 +641,40 @@ async function aplicarRenderizacao(mainContainer, htmlDestaque, htmlGridLojista,
         // e garante que nunca aparece layout parcial/instável.
         await preCarregarImagem(imagemCapaProdutoAtivo);
 
-        const slider = document.getElementById('slider-main');
-        const counter = document.getElementById('counter');
-        if (slider && counter) {
-            slider.addEventListener('scroll', () => {
-                const index = Math.round(slider.scrollLeft / slider.offsetWidth) + 1;
-                counter.innerText = index;
-                // Atualiza borda das miniaturas ao scrollar
-                document.querySelectorAll('.thumb-item').forEach((t, i) => {
-                    t.style.borderColor = (i === index - 1) ? '#ee4d2d' : '#e0e0e0';
-                });
-            });
+        // Libera o scroll vertical da página quando o gesto sobre a foto
+        // principal é predominantemente vertical, sem alterar em nada o
+        // comportamento nativo de swipe horizontal entre fotos (scroll-snap).
+        const sliderPrincipalTouch = document.getElementById('slider-main');
+        if (sliderPrincipalTouch) {
+            let inicioX = 0, inicioY = 0, ultimoY = 0, direcaoGesto = null;
+
+            sliderPrincipalTouch.addEventListener('touchstart', (e) => {
+                if (e.touches.length !== 1) return;
+                inicioX = e.touches[0].clientX;
+                inicioY = e.touches[0].clientY;
+                ultimoY = inicioY;
+                direcaoGesto = null;
+            }, { passive: true });
+
+            sliderPrincipalTouch.addEventListener('touchmove', (e) => {
+                if (e.touches.length !== 1) return;
+                const atualX = e.touches[0].clientX;
+                const atualY = e.touches[0].clientY;
+
+                if (direcaoGesto === null) {
+                    const deltaX = atualX - inicioX;
+                    const deltaY = atualY - inicioY;
+                    if (Math.abs(deltaX) > 6 || Math.abs(deltaY) > 6) {
+                        direcaoGesto = Math.abs(deltaY) > Math.abs(deltaX) ? 'vertical' : 'horizontal';
+                    }
+                }
+
+                if (direcaoGesto === 'vertical') {
+                    e.preventDefault();
+                    window.scrollBy(0, ultimoY - atualY);
+                }
+                ultimoY = atualY;
+            }, { passive: false });
         }
 
         // Conecta lógica de play/pause em todos os vídeos do slider

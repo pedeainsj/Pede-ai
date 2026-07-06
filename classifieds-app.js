@@ -203,7 +203,7 @@ function renderizarAnuncios(lista) {
             <div class="card-anuncio" data-id="${a.id}" onclick="window.location.href='detalhe-anuncio.html?id=${a.id}'">
                 <div class="card-img-container">
                     ${temImagem
-                        ? `<img src="${a.foto}" loading="lazy" alt="${escapeHtml(a.titulo)}">`
+                        ? `<img src="${a.foto}" loading="lazy" alt="${escapeHtml(a.titulo)}" crossorigin="anonymous" style="width:100%;height:100%;background:#fcfcfc;display:block;transition:opacity 0.2s;object-fit:cover;object-position:center center;" onerror="this.removeAttribute('crossorigin');this.onerror=null;this.src=this.src;" onload="(function(img){try{const ratio=img.naturalWidth/img.naturalHeight;if(ratio<0.6){img.style.objectFit='contain';img.style.transform='scale(1.18) scaleX(1.15)';}else{img.style.objectFit='cover';img.style.objectPosition='center center';}}catch(e){img.style.objectFit='cover';}})(this)">`
                         : `<div style="display:flex;align-items:center;justify-content:center;color:#D1D1D6;height:100%;"><i class="fas fa-image fa-2x"></i></div>`
                     }
                 </div>

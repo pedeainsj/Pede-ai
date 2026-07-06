@@ -94,16 +94,17 @@ function renderizarMediaCard(produto, modo) {
 
 const MAPAS_FILTROS = {
     'products': {
-        'eletrônicos': ['ventilador', 'tv', 'televisao', 'eletronico', 'fone', 'liquidificador', 'eletro', 'aparelho', 'som', 'computador', 'notebook', 'pc', 'bivolt', 'voltagem', 'microondas', 'geladeira'],
-        'celulares': ['celular', 'smartphone', 'iphone', 'samsung', 'xiaomi', 'motorola', 'redmi', 'android', 'ios', 'capinha', 'carregador'],
-        'ferramentas': ['ferramenta', 'furadeira', 'makita', 'serra', 'pa', 'martelo', 'chave', 'parafusadeira', 'trena', 'alicate'],
-        'cosméticos': ['batom', 'perfume', 'desodorante', 'creme', 'hidratante', 'maquiagem', 'shampoo', 'condicionador', 'esmalte', 'beleza', 'cosmetico'],
-        'moda feminina': ['vestido', 'blusa feminina', 'saia', 'macacão feminino', 'macacao feminino', 'cropped', 'legging', 'short feminino', 'moda feminina', 'roupa feminina', 'conjunto feminino'],
-        'moda masculina': ['camisa masculina', 'camiseta masculina', 'bermuda', 'polo masculina', 'moda masculina', 'roupa masculina', 'calça masculina', 'calca masculina', 'regata masculina'],
-        'moda infantil': ['roupa infantil', 'moda infantil', 'body bebê', 'body bebe', 'macacão infantil', 'macacao infantil', 'conjunto infantil', 'roupa de bebê', 'roupa de bebe', 'roupa criança', 'roupa crianca'],
-        'calçados': ['sapato', 'tênis', 'tenis', 'sandália', 'sandalia', 'chinelo', 'sapatilha', 'bota', 'calçado', 'calcado', 'salto', 'rasteirinha'],
-        'bolsas': ['bolsa', 'mochila', 'carteira', 'necessaire', 'clutch', 'bolsa feminina', 'bolsa transversal'],
-        'bijuterias': ['bijuteria', 'colar', 'brinco', 'pulseira', 'anel', 'pingente', 'piercing', 'acessório', 'acessorio', 'joia folheada', 'semijoia'],
+        'eletrônicos': ['ventilador', 'tv', 'televisao', 'televisão', 'eletronico', 'eletrônico', 'eletronicos', 'eletrônicos', 'fone', 'fones', 'liquidificador', 'eletro', 'eletrodomestico', 'eletrodoméstico', 'aparelho', 'som', 'caixa de som', 'computador', 'notebook', 'laptop', 'pc', 'bivolt', 'voltagem', 'microondas', 'geladeira', 'monitor', 'camera', 'câmera', 'video game', 'videogame', 'console', 'tablet', 'drone', 'impressora', 'roteador', 'carregador portatil', 'carregador portátil', 'fone de ouvido', 'headset', 'caixinha de som', 'smartwatch', 'relogio inteligente', 'relógio inteligente'],
+        'celulares': ['celular', 'celulares', 'smartphone', 'smartphones', 'iphone', 'samsung', 'xiaomi', 'motorola', 'redmi', 'android', 'ios', 'capinha', 'capa de celular', 'pelicula', 'película', 'carregador', 'fone bluetooth', 'aparelho celular', 'aparelho'],
+        'ferramentas': ['ferramenta', 'ferramentas', 'furadeira', 'makita', 'serra', 'pá de jardim', 'martelo', 'martelete', 'chave de fenda', 'chave inglesa', 'chave allen', 'parafusadeira', 'trena', 'alicate', 'lixadeira', 'esmerilhadeira', 'compressor', 'parafuso', 'nivel', 'nível', 'marreta', 'enxada'],
+        'cosméticos': ['batom', 'perfume', 'perfumes', 'desodorante', 'creme', 'hidratante', 'maquiagem', 'maquiagens', 'shampoo', 'condicionador', 'esmalte', 'beleza', 'cosmetico', 'cosmético', 'cosmeticos', 'cosméticos', 'sabonete', 'protetor solar', 'base', 'rimel', 'rímel', 'delineador', 'gloss', 'primer', 'po compacto', 'pó compacto'],
+        'moda feminina': ['vestido', 'vestidos', 'blusa feminina', 'blusa', 'saia', 'saias', 'macacão feminino', 'macacao feminino', 'cropped', 'legging', 'leggings', 'short feminino', 'moda feminina', 'roupa feminina', 'conjunto feminino', 'feminina', 'feminino', 'mulher', 'top feminino', 'macaquinho'],
+        'moda masculina': ['camisa masculina', 'camisa', 'camiseta masculina', 'camiseta', 'bermuda', 'bermudas', 'polo masculina', 'polo', 'moda masculina', 'roupa masculina', 'calça masculina', 'calca masculina', 'calça', 'calça jeans', 'jeans', 'regata masculina', 'regata', 'masculina', 'masculino', 'homem', 'moletom', 'blazer', 'jaqueta'],
+        'moda infantil': ['roupa infantil', 'moda infantil', 'body bebê', 'body bebe', 'macacão infantil', 'macacao infantil', 'conjunto infantil', 'roupa de bebê', 'roupa de bebe', 'roupa criança', 'roupa crianca', 'infantil', 'bebe', 'bebê', 'crianca', 'criança', 'menino', 'menina', 'juvenil', 'kids'],
+        'calçados': ['sapato', 'sapatos', 'tênis', 'tenis', 'sandália', 'sandalia', 'sandálias', 'chinelo', 'chinelos', 'sapatilha', 'bota', 'botas', 'calçado', 'calcado', 'calçados', 'calcados', 'salto', 'saltos', 'rasteirinha', 'papete'],
+        'bolsas': ['bolsa', 'bolsas', 'mochila', 'mochilas', 'carteira', 'carteiras', 'necessaire', 'clutch', 'bolsa feminina', 'bolsa transversal', 'mala', 'malas', 'pochete'],
+        'bijuterias': ['bijuteria', 'bijuterias', 'colar', 'colares', 'brinco', 'brincos', 'pulseira', 'pulseiras', 'anel', 'aneis', 'anéis', 'pingente', 'piercing', 'joia folheada', 'semijoia', 'gargantilha', 'tornozeleira'],
+        'acessórios': ['acessório', 'acessorio', 'acessorios', 'acessórios', 'cinto', 'cintos', 'oculos', 'óculos', 'oculos de sol', 'óculos de sol', 'boné', 'bone', 'chapéu', 'chapeu', 'lenço', 'lenco', 'echarpe', 'gravata', 'suspensório', 'suspensorio', 'carteira', 'relogio', 'relógio', 'relogio de pulso', 'relógio de pulso'],
         'promoção': ['promoção', 'promocao', 'oferta', 'queima', 'desconto', 'liquidando', 'barato', 'off']
     },
     'restaurants': {
@@ -125,7 +126,7 @@ const MAPAS_FILTROS = {
 };
 
 const CHIPS_POR_MODO = {
-    'products': ['Todos', 'Eletrônicos', 'Celulares', 'Ferramentas', 'Cosméticos', 'Moda Feminina', 'Moda Masculina', 'Moda Infantil', 'Calçados', 'Bolsas', 'Bijuterias', 'Promoção'],
+    'products': ['Todos', 'Eletrônicos', 'Celulares', 'Ferramentas', 'Cosméticos', 'Moda Feminina', 'Moda Masculina', 'Moda Infantil', 'Calçados', 'Bolsas', 'Bijuterias', 'Acessórios', 'Promoção'],
     'restaurants': ['Todos', 'Lanches', 'Bebidas', 'Sorvetes', 'Doces', 'Salgados', 'Fitness', 'Promoção'],
     'classifieds': ['Todos', 'Veículos', 'Imóveis', 'Animais', 'Máquinas', 'Outros']
 };

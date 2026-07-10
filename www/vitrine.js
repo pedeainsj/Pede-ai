@@ -477,7 +477,8 @@ const funcAddConfig = adicionaisProduto.length > 0
   </div>`;
  } else {
     return `
-  <div style="min-width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#fff; scroll-snap-align:start;">
+  <div style="min-width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#fff; scroll-snap-align:start; position:relative; overflow:hidden;">
+    <img src="${otimizarURL(item.url, 100)}" aria-hidden="true" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; filter:blur(24px) brightness(0.9); opacity:0.55;">
     <img src="${otimizarURL(item.url, 1000)}"
          decode="async"
          loading="eager"
@@ -486,18 +487,15 @@ const funcAddConfig = adicionaisProduto.length > 0
              const h = this.naturalHeight;
              if (h > w) {
                  this.style.objectFit = 'contain';
-                 this.style.transform = 'scale(1.15) scaleX(1.12)';
              }
              else if (w > h) {
                  this.style.objectFit = 'cover';
-                 this.style.transform = 'scale(1.02) scaleX(1.01)';
              }
              else {
                  this.style.objectFit = 'contain';
-                 this.style.transform = 'scale(1.08) scaleX(1.02)';
              }
          "
-         style="width:100%; height:100%; object-position:center; transition:0.2s;">
+         style="position:relative; width:100%; height:100%; object-position:center; transition:0.2s;">
   </div>`;
 }
                     }).join('');

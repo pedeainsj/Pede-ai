@@ -502,7 +502,7 @@ const funcAddConfig = adicionaisProduto.length > 0
 
                     htmlDestaque = `
     <div class="destaque-container" style="background:#fff;">
-        <div class="slider-wrapper" style="width:100%; height:420px; position:relative; background:#fff; border-bottom:1px solid #f0f0f0;">
+        <div class="slider-wrapper" id="slider-wrapper-produto" style="width:100%; height:420px; position:relative; background:#fff; border-bottom:1px solid #f0f0f0;">
             <div class="image-slider" id="slider-main" style="display:flex; width:100%; height:100%; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none;">
                 ${sliderHTML}
             </div>
@@ -778,6 +778,116 @@ async function aplicarRenderizacao(mainContainer, htmlDestaque, htmlGridLojista,
                 });
             }
         });
+
+        // ===== Visualizador fullscreen da foto principal — SOMENTE tema produtos =====
+        // Reaproveita o MESMO #slider-main (reparenting), sem clonar e sem criar
+        // outra galeria. O bloco gourmet (id="slider-main" fora de #slider-wrapper-produto)
+        // não é afetado, pois esta lógica só ativa se #slider-wrapper-produto existir.
+        const sliderWrapperProduto = document.getElementById('slider-wrapper-produto');
+        const sliderMainProduto = sliderWrapperProduto ? sliderWrapperProduto.querySelector('#slider-main') : null;
+
+        if (sliderWrapperProduto && sliderMainProduto) {
+            const totalFotosVisualizador = sliderMainProduto.children.length;
+            let scrollLeftSalvoVisualizador = 0;
+            const scrollYPaginaSalvo = () => window.scrollY;
+
+            function irParaIndiceVisualizador(novoIndice) {
+                if (novoIndice < 0 || novoIndice >= totalFotosVisualizador) return;
+                sliderMainProduto.scrollTo({ left: sliderMainProduto.offsetWidth * novoIndice, behavior: 'smooth' });
+                const counterEl = document.getElementById('counter');
+                if (counterEl) counterEl.innerText = novoIndice + 1;
+                document.querySelectorAll('.thumb-item').forEach((t, i) => {
+                    t.style.borderColor = i === novoIndice ? '#ee4d2d' : '#e0e0e0';
+                });
+            }
+
+            function indiceAtualVisualizador() {
+                return Math.round(sliderMainProduto.scrollLeft / sliderMainProduto.offsetWidth);
+            }
+
+            function abrirVisualizadorFotoProduto() {
+                scrollLeftSalvoVisualizador = sliderMainProduto.scrollLeft;
+                const scrollYSalvo = window.scrollY;
+
+                const overlay = document.createElement('div');
+                overlay.id = 'visualizador-foto-overlay';
+                overlay.style.cssText = 'position:fixed; inset:0; z-index:99999; background:rgba(0,0,0,0); display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity 0.22s ease, background-color 0.22s ease;';
+
+                const btnFechar = document.createElement('button');
+                btnFechar.setAttribute('aria-label', 'Fechar');
+                btnFechar.style.cssText = 'position:absolute; top:calc(env(safe-area-inset-top, 0px) + 14px); left:16px; width:38px; height:38px; border-radius:50%; border:none; background:rgba(0,0,0,0.35); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); box-shadow:0 2px 10px rgba(0,0,0,0.25); color:#fff; font-size:18px; display:flex; align-items:center; justify-content:center; z-index:3; opacity:0; transform:scale(0.9); transition:opacity 0.22s ease, transform 0.22s ease;';
+                btnFechar.innerHTML = '&#10005;';
+
+                let btnEsquerda = null, btnDireita = null;
+                if (totalFotosVisualizador > 1) {
+                    btnEsquerda = document.createElement('button');
+                    btnEsquerda.setAttribute('aria-label', 'Foto anterior');
+                    btnEsquerda.style.cssText = 'position:absolute; top:50%; left:12px; transform:translateY(-50%) scale(0.9); width:38px; height:38px; border-radius:50%; border:none; background:rgba(0,0,0,0.35); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); box-shadow:0 2px 10px rgba(0,0,0,0.25); color:#fff; font-size:16px; display:flex; align-items:center; justify-content:center; z-index:3; opacity:0; transition:opacity 0.22s ease, transform 0.22s ease;';
+                    btnEsquerda.innerHTML = '&#9664;';
+
+                    btnDireita = document.createElement('button');
+                    btnDireita.setAttribute('aria-label', 'Próxima foto');
+                    btnDireita.style.cssText = 'position:absolute; top:50%; right:12px; transform:translateY(-50%) scale(0.9); width:38px; height:38px; border-radius:50%; border:none; background:rgba(0,0,0,0.35); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); box-shadow:0 2px 10px rgba(0,0,0,0.25); color:#fff; font-size:16px; display:flex; align-items:center; justify-content:center; z-index:3; opacity:0; transition:opacity 0.22s ease, transform 0.22s ease;';
+                    btnDireita.innerHTML = '&#9654;';
+
+                    btnEsquerda.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        irParaIndiceVisualizador(indiceAtualVisualizador() - 1);
+                    });
+                    btnDireita.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        irParaIndiceVisualizador(indiceAtualVisualizador() + 1);
+                    });
+                }
+
+                document.body.appendChild(overlay);
+                overlay.appendChild(btnFechar);
+                if (btnEsquerda) overlay.appendChild(btnEsquerda);
+                if (btnDireita) overlay.appendChild(btnDireita);
+
+                document.body.style.overflow = 'hidden';
+
+                overlay.appendChild(sliderMainProduto);
+                sliderMainProduto.style.height = '100%';
+
+                requestAnimationFrame(() => {
+                    sliderMainProduto.scrollLeft = scrollLeftSalvoVisualizador;
+                    overlay.style.background = 'rgba(0,0,0,0.95)';
+                    overlay.style.opacity = '1';
+                    btnFechar.style.opacity = '1';
+                    btnFechar.style.transform = 'scale(1)';
+                    if (btnEsquerda) { btnEsquerda.style.opacity = '1'; btnEsquerda.style.transform = 'translateY(-50%) scale(1)'; }
+                    if (btnDireita) { btnDireita.style.opacity = '1'; btnDireita.style.transform = 'translateY(-50%) scale(1)'; }
+                });
+
+                function fecharVisualizadorFotoProduto() {
+                    const scrollAtual = sliderMainProduto.scrollLeft;
+                    overlay.style.opacity = '0';
+                    overlay.style.background = 'rgba(0,0,0,0)';
+                    btnFechar.style.opacity = '0';
+                    if (btnEsquerda) btnEsquerda.style.opacity = '0';
+                    if (btnDireita) btnDireita.style.opacity = '0';
+                    setTimeout(() => {
+                        sliderMainProduto.style.height = '100%';
+                        sliderWrapperProduto.insertBefore(sliderMainProduto, sliderWrapperProduto.firstChild);
+                        sliderMainProduto.scrollLeft = scrollAtual;
+                        document.body.style.overflow = '';
+                        window.scrollTo(0, scrollYSalvo);
+                        overlay.remove();
+                    }, 220);
+                }
+
+                btnFechar.addEventListener('click', fecharVisualizadorFotoProduto);
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) fecharVisualizadorFotoProduto();
+                });
+            }
+
+            sliderWrapperProduto.addEventListener('click', (e) => {
+                if (e.target.closest('video') || e.target.closest('.custom-video-overlay') || e.target.closest('.replay-overlay')) return;
+                abrirVisualizadorFotoProduto();
+            });
+        }
 
 }
 export async function carregarVitrineCompleta() {

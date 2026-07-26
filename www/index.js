@@ -800,6 +800,10 @@ window.filtrarPorPalavra = (termo, elemento) => {
     const novoFiltro = normalizar(termo);
     if (filtroChip === novoFiltro) return;
     filtroChip = novoFiltro;
+    filtroTexto = '';
+    ultimoFiltroTexto = '';
+    const inputBuscaEl = document.getElementById('inputBusca');
+    if (inputBuscaEl) inputBuscaEl.value = '';
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
     elemento.classList.add('active');
 
@@ -835,6 +839,10 @@ window.addEventListener('changeMode', (e) => {
 
     modoAtual = e.detail;
     filtroChip = ''; 
+    filtroTexto = '';
+    ultimoFiltroTexto = '';
+    const inputBuscaEl = document.getElementById('inputBusca');
+    if (inputBuscaEl) inputBuscaEl.value = ''; 
 
     const logo = document.getElementById('main-logo');
     if(logo) {

@@ -197,7 +197,7 @@ function inicializar(opts = {}) {
         currentInitSequence++; // Incrementa para ignorar retornos de chamadas antigas
         window._backupProdutos = todosProdutos.length > 0 ? [...todosProdutos] : null;
         todosProdutos = [];
-        localStorage.removeItem('todosProdutosCache');
+        sessionStorage.removeItem('todosProdutosCache');
         sessionStorage.removeItem('pedeai_dom_cache');
         sessionStorage.removeItem('pedeai_carousel_cache');
         sessionStorage.removeItem('pedeai_scroll');
@@ -281,19 +281,41 @@ async function inicializarInterno(sequenceId) {
         if (currentInitSequence !== sequenceId) return;
         setEstadoInit(ESTADOS_INIT.CARREGANDO_FIREBASE);
 
-        const TTL_CACHE_PRODUTOS_MS = 15 * 60 * 1000; // 15 minutos
-        const cachedProdutosRaw = localStorage.getItem('todosProdutosCache');
-        if (cachedProdutosRaw && !todosProdutos.length) {
+        const PEDEAI_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos — ajuste aqui se quiser outro tempo
+        const PEDEAI_CACHE_KEY = 'pedeai_produtos_cache_persistente';
+
+        const lerCachePersistente = () => {
           try {
-            const cacheParsed = JSON.parse(cachedProdutosRaw);
-            const cacheExpirado = !cacheParsed.timestamp || (Date.now() - cacheParsed.timestamp) > TTL_CACHE_PRODUTOS_MS;
-            if (!cacheExpirado && Array.isArray(cacheParsed.dados)) {
-              todosProdutos = cacheParsed.dados;
-              console.log('Produtos restaurados do cache');
-            } else {
-              localStorage.removeItem('todosProdutosCache');
-            }
-          } catch(e) { console.warn(e); }
+            const bruto = localStorage.getItem(PEDEAI_CACHE_KEY);
+            if (!bruto) return null;
+            const parsed = JSON.parse(bruto);
+            if (!parsed || !Array.isArray(parsed.dados) || typeof parsed.timestamp !== 'number') return null;
+            const expirado = (Date.now() - parsed.timestamp) > PEDEAI_CACHE_TTL_MS;
+            if (expirado) return null;
+            return parsed.dados;
+          } catch (e) {
+            console.warn('[cache-persistente] falha ao ler, ignorando cache:', e);
+            return null;
+          }
+        };
+
+        const salvarCachePersistente = (dados) => {
+          try {
+            localStorage.setItem(PEDEAI_CACHE_KEY, JSON.stringify({
+              timestamp: Date.now(),
+              dados: dados
+            }));
+          } catch (e) {
+            console.warn('[cache-persistente] falha ao salvar (ex: quota excedida), seguindo sem cache:', e);
+          }
+        };
+
+        if (!todosProdutos.length) {
+          const cachePersistente = lerCachePersistente();
+          if (cachePersistente) {
+            todosProdutos = cachePersistente;
+            console.log('Produtos restaurados do cache persistente (TTL válido)');
+          }
         }
 
         setEstadoInit(ESTADOS_INIT.CARREGANDO_PRODUTOS);
@@ -302,8 +324,8 @@ async function inicializarInterno(sequenceId) {
           const timeoutFirestore = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore timeout ao reabrir o app')), ms));
           const [snapProdutos, snapUsuarios] = await Promise.race([
             Promise.all([
-              getDocs(collection(db, "produtos")),
-              getDocs(collection(db, "usuarios"))
+              getDocs(query(collection(db, "produtos"), where("status", "==", "ativo"))),
+              getDocs(query(collection(db, "usuarios"), where("status", "==", "ativo")))
             ]),
             timeoutFirestore(25000)
           ]);
@@ -335,9 +357,7 @@ async function inicializarInterno(sequenceId) {
               isProdutoAtivo: data.status !== 'inativo' && data.visivel !== false
             });
           });
-          try {
-            localStorage.setItem('todosProdutosCache', JSON.stringify({ timestamp: Date.now(), dados: todosProdutos }));
-          } catch(e) { console.warn('Falha ao salvar cache local:', e); }
+          salvarCachePersistente(todosProdutos);
         }
 
         if (currentInitSequence !== sequenceId) {
@@ -738,32 +758,20 @@ async function renderizarProdutos(opcoes = {}) {
     }
 }
 
-window.navegarParaProduto = (owner, id, modo) => {
+window.navegarParaProduto = async (owner, id, modo) => {
     const grid = document.getElementById('grid-produtos');
     if (grid) sessionStorage.setItem('pedeai_dom_cache', grid.innerHTML);
     const track = document.getElementById('carouselTrack');
     if (track && track.innerHTML.trim()) sessionStorage.setItem('pedeai_carousel_cache', track.innerHTML);
     sessionStorage.setItem('pedeai_scroll', window.scrollY);
-    // Navega IMEDIATAMENTE — o fechamento do canal Firestore não pode
-    // bloquear o clique. db.terminate() é disparado em paralelo (fire-and-forget)
-    // pouco antes da troca de página; o browser aborta a network request de
-    // qualquer forma na navegação, então o benefício de "fechar antes" não
-    // exige mais esperar a Promise resolver.
+    // Fecha a conexão Firestore desta página ANTES de navegar, em vez de
+    // depender do evento 'pagehide' (best-effort, não garantido no WKWebView
+    // do Capacitor). Isso garante que o canal WebChannel seja liberado de
+    // forma síncrona com o clique, eliminando o acúmulo de conexões que
+    // causava o timeout de 20-30s após várias navegações.
+    try { await db.terminate(); window.__pedeaiDbTerminado = true; } catch (e) {}
     window.location.href = `vitrine-lojista.html?seller=${owner}&product=${id}&modo=${modo}`;
-    try { db.terminate().then(() => { window.__pedeaiDbTerminado = true; }).catch(() => {}); } catch (e) {}
 };
-
-const _cacheKeywordsNormalizadas = {};
-function _obterKeywordsNormalizadas(modo, chipNormalizado) {
-    const cacheModo = _cacheKeywordsNormalizadas[modo] || (_cacheKeywordsNormalizadas[modo] = {});
-    if (cacheModo[chipNormalizado]) return cacheModo[chipNormalizado];
-
-    const chavesMapa = Object.keys(MAPAS_FILTROS[modo] || {});
-    const chaveReal = chavesMapa.find(k => normalizar(k) === chipNormalizado) || chipNormalizado;
-    const keywords = (MAPAS_FILTROS[modo][chaveReal] || []).map(k => normalizar(k));
-    cacheModo[chipNormalizado] = keywords;
-    return keywords;
-}
 
 function filtrarCards() {
     const grid = document.getElementById('grid-produtos');
@@ -771,9 +779,6 @@ function filtrarCards() {
 
     const cards = grid.querySelectorAll('.product-card, .gourmet-card');
     const termoBusca = normalizar(filtroTexto);
-    const keywordsAtivas = (filtroChip && filtroChip !== '' && filtroChip !== 'promocao')
-        ? _obterKeywordsNormalizadas(modoAtual, filtroChip)
-        : null;
     let visiveisCount = 0;
 
     cards.forEach(card => {
@@ -787,8 +792,11 @@ function filtrarCards() {
 
         if (visivel && filtroChip === 'promocao') {
             if (promocao !== 'sim') visivel = false;
-        } else if (visivel && keywordsAtivas) {
-            if (!keywordsAtivas.some(k => chip.includes(k)) && !chip.includes(filtroChip)) {
+        } else if (visivel && filtroChip && filtroChip !== '') {
+            const chavesMapa = Object.keys(MAPAS_FILTROS[modoAtual] || {});
+            const chaveReal = chavesMapa.find(k => normalizar(k) === filtroChip) || filtroChip;
+            const keywords = MAPAS_FILTROS[modoAtual][chaveReal] || [];
+            if (!keywords.some(k => chip.includes(normalizar(k))) && !chip.includes(filtroChip)) {
                 visivel = false;
             }
         }
@@ -821,6 +829,10 @@ window.filtrarPorPalavra = (termo, elemento) => {
     const novoFiltro = normalizar(termo);
     if (filtroChip === novoFiltro) return;
     filtroChip = novoFiltro;
+    filtroTexto = '';
+    ultimoFiltroTexto = '';
+    const inputBuscaEl = document.getElementById('inputBusca');
+    if (inputBuscaEl) inputBuscaEl.value = '';
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
     elemento.classList.add('active');
 
@@ -856,6 +868,10 @@ window.addEventListener('changeMode', (e) => {
 
     modoAtual = e.detail;
     filtroChip = ''; 
+    filtroTexto = '';
+    ultimoFiltroTexto = '';
+    const inputBuscaEl = document.getElementById('inputBusca');
+    if (inputBuscaEl) inputBuscaEl.value = ''; 
 
     const logo = document.getElementById('main-logo');
     if(logo) {

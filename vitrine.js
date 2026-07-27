@@ -17,34 +17,24 @@ let lojistaInfoCache = null;
 window.tamanhoSelecionadoAtual = null;
 let carregamentoVitrineEmAndamento = false;
 
-const _urlOtimizadaCache = new Map();
 function otimizarURL(url, width = 400) {
     if (!url || typeof url !== 'string') {
         return "https://via.placeholder.com/300";
     }
 
-    const chaveCache = `${url}|${width}`;
-    if (_urlOtimizadaCache.has(chaveCache)) {
-        return _urlOtimizadaCache.get(chaveCache);
-    }
-
     if (!url.includes('cloudinary.com/image/upload')) {
-        _urlOtimizadaCache.set(chaveCache, url);
         return url;
     }
 
     // evita reaplicar otimização
     if (url.includes('f_auto') || url.includes('q_auto')) {
-        _urlOtimizadaCache.set(chaveCache, url);
         return url;
     }
 
-    const resultado = url.replace(
+    return url.replace(
         '/image/upload/',
         `/image/upload/f_auto,q_auto:eco,w_${width},c_limit/`
     );
-    _urlOtimizadaCache.set(chaveCache, resultado);
-    return resultado;
 }
 
 function otimizarVideoURL(url) {
@@ -385,7 +375,7 @@ const funcAddConfig = adicionaisProduto.length > 0
 
                 const sliderHTML = mediaItems.map(item => {
                     if (item.type === 'video') {
-                        const videoId = `vid_gourmet_${d.id}`;
+                        const videoId = `vid_gourmet_${Math.random()}`;
                         const posterGourmet = item.url && item.url.includes('res.cloudinary.com')
                             ? item.url.replace('/video/upload/', '/video/upload/so_0/').replace(/\.(mp4|mov|webm)$/i, '.jpg')
                             : '';
@@ -468,7 +458,7 @@ const funcAddConfig = adicionaisProduto.length > 0
 
                     const sliderHTML = mediaItems.map((item, idx) => {
                         if (item.type === 'video') {
-                            const videoId = `vid_prod_${d.id}`;
+                            const videoId = `vid_prod_${Math.random()}`;
                             return `
   <div style="min-width:100%; height:100%; display:flex; align-items:center; justify-content:center; background:#000; scroll-snap-align:start; position:relative;">
     <video id="${videoId}" src="${otimizarVideoURL(item.url)}" poster="${item.url && item.url.includes('res.cloudinary.com') ? item.url.replace('/video/upload/', '/video/upload/so_0/').replace(/\.(mp4|mov|webm)$/i, '.jpg') : ''}" preload="none" muted playsinline style="width:100%; height:100%; object-fit:contain; background:#000;"></video>
@@ -644,11 +634,10 @@ async function aplicarRenderizacao(mainContainer, htmlDestaque, htmlGridLojista,
                 </div>
             </div>`;
 
-        // A imagem de capa já está no DOM (dentro do innerHTML acima) e já
-        // começou a carregar sozinha — não esperamos mais nenhuma pré-carga
-        // redundante aqui. O skeleton sai imediatamente após o DOM ser
-        // montado, e a foto aparece assim que o próprio <img> real terminar
-        // de carregar (comportamento nativo do navegador).
+        // Só revela o conteúdo depois que a imagem de capa do produto
+        // realmente carregou (ou falhou/expirou) — elimina o "pop" de imagem
+        // e garante que nunca aparece layout parcial/instável.
+        await preCarregarImagem(imagemCapaProdutoAtivo);
 
         // Libera o scroll vertical da página quando o gesto sobre a foto
         // principal é predominantemente vertical, sem alterar em nada o

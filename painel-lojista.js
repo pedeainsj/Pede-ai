@@ -725,6 +725,14 @@ document.getElementById('btn-salvar').onclick = async () => {
             createdAt: serverTimestamp()
         });
 
+        // Invalida o cache persistente do index para que o produto recém-publicado
+        // apareça imediatamente na vitrine, sem esperar o TTL de 5 minutos expirar.
+        try {
+            localStorage.removeItem('pedeai_produtos_cache_persistente');
+        } catch (e) {
+            console.warn('Não foi possível invalidar o cache persistente do index:', e);
+        }
+
         // Feedback elegante
         if (window.mostrarSucessoPublicacao) window.mostrarSucessoPublicacao();
 

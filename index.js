@@ -1,5 +1,5 @@
 import { db, GetRegrasLojista, APP_URL } from './config.js';
-import { collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, getDocs, addDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // Reaplica a credencial após terminate() ter sido chamado antes de uma navegação
 // anterior — terminate() invalida o objeto db para qualquer chamada futura
@@ -197,7 +197,7 @@ function inicializar(opts = {}) {
         currentInitSequence++; // Incrementa para ignorar retornos de chamadas antigas
         window._backupProdutos = todosProdutos.length > 0 ? [...todosProdutos] : null;
         todosProdutos = [];
-        sessionStorage.removeItem('todosProdutosCache');
+        localStorage.removeItem('todosProdutosCache');
         sessionStorage.removeItem('pedeai_dom_cache');
         sessionStorage.removeItem('pedeai_carousel_cache');
         sessionStorage.removeItem('pedeai_scroll');
@@ -281,11 +281,18 @@ async function inicializarInterno(sequenceId) {
         if (currentInitSequence !== sequenceId) return;
         setEstadoInit(ESTADOS_INIT.CARREGANDO_FIREBASE);
 
-        const cachedProdutos = sessionStorage.getItem('todosProdutosCache');
-        if (cachedProdutos && !todosProdutos.length) {
+        const TTL_CACHE_PRODUTOS_MS = 15 * 60 * 1000; // 15 minutos
+        const cachedProdutosRaw = localStorage.getItem('todosProdutosCache');
+        if (cachedProdutosRaw && !todosProdutos.length) {
           try {
-            todosProdutos = JSON.parse(cachedProdutos);
-            console.log('Produtos restaurados do cache');
+            const cacheParsed = JSON.parse(cachedProdutosRaw);
+            const cacheExpirado = !cacheParsed.timestamp || (Date.now() - cacheParsed.timestamp) > TTL_CACHE_PRODUTOS_MS;
+            if (!cacheExpirado && Array.isArray(cacheParsed.dados)) {
+              todosProdutos = cacheParsed.dados;
+              console.log('Produtos restaurados do cache');
+            } else {
+              localStorage.removeItem('todosProdutosCache');
+            }
           } catch(e) { console.warn(e); }
         }
 
@@ -328,7 +335,9 @@ async function inicializarInterno(sequenceId) {
               isProdutoAtivo: data.status !== 'inativo' && data.visivel !== false
             });
           });
-          sessionStorage.setItem('todosProdutosCache', JSON.stringify(todosProdutos));
+          try {
+            localStorage.setItem('todosProdutosCache', JSON.stringify({ timestamp: Date.now(), dados: todosProdutos }));
+          } catch(e) { console.warn('Falha ao salvar cache local:', e); }
         }
 
         if (currentInitSequence !== sequenceId) {
@@ -729,20 +738,32 @@ async function renderizarProdutos(opcoes = {}) {
     }
 }
 
-window.navegarParaProduto = async (owner, id, modo) => {
+window.navegarParaProduto = (owner, id, modo) => {
     const grid = document.getElementById('grid-produtos');
     if (grid) sessionStorage.setItem('pedeai_dom_cache', grid.innerHTML);
     const track = document.getElementById('carouselTrack');
     if (track && track.innerHTML.trim()) sessionStorage.setItem('pedeai_carousel_cache', track.innerHTML);
     sessionStorage.setItem('pedeai_scroll', window.scrollY);
-    // Fecha a conexão Firestore desta página ANTES de navegar, em vez de
-    // depender do evento 'pagehide' (best-effort, não garantido no WKWebView
-    // do Capacitor). Isso garante que o canal WebChannel seja liberado de
-    // forma síncrona com o clique, eliminando o acúmulo de conexões que
-    // causava o timeout de 20-30s após várias navegações.
-    try { await db.terminate(); window.__pedeaiDbTerminado = true; } catch (e) {}
+    // Navega IMEDIATAMENTE — o fechamento do canal Firestore não pode
+    // bloquear o clique. db.terminate() é disparado em paralelo (fire-and-forget)
+    // pouco antes da troca de página; o browser aborta a network request de
+    // qualquer forma na navegação, então o benefício de "fechar antes" não
+    // exige mais esperar a Promise resolver.
     window.location.href = `vitrine-lojista.html?seller=${owner}&product=${id}&modo=${modo}`;
+    try { db.terminate().then(() => { window.__pedeaiDbTerminado = true; }).catch(() => {}); } catch (e) {}
 };
+
+const _cacheKeywordsNormalizadas = {};
+function _obterKeywordsNormalizadas(modo, chipNormalizado) {
+    const cacheModo = _cacheKeywordsNormalizadas[modo] || (_cacheKeywordsNormalizadas[modo] = {});
+    if (cacheModo[chipNormalizado]) return cacheModo[chipNormalizado];
+
+    const chavesMapa = Object.keys(MAPAS_FILTROS[modo] || {});
+    const chaveReal = chavesMapa.find(k => normalizar(k) === chipNormalizado) || chipNormalizado;
+    const keywords = (MAPAS_FILTROS[modo][chaveReal] || []).map(k => normalizar(k));
+    cacheModo[chipNormalizado] = keywords;
+    return keywords;
+}
 
 function filtrarCards() {
     const grid = document.getElementById('grid-produtos');
@@ -750,6 +771,9 @@ function filtrarCards() {
 
     const cards = grid.querySelectorAll('.product-card, .gourmet-card');
     const termoBusca = normalizar(filtroTexto);
+    const keywordsAtivas = (filtroChip && filtroChip !== '' && filtroChip !== 'promocao')
+        ? _obterKeywordsNormalizadas(modoAtual, filtroChip)
+        : null;
     let visiveisCount = 0;
 
     cards.forEach(card => {
@@ -763,11 +787,8 @@ function filtrarCards() {
 
         if (visivel && filtroChip === 'promocao') {
             if (promocao !== 'sim') visivel = false;
-        } else if (visivel && filtroChip && filtroChip !== '') {
-            const chavesMapa = Object.keys(MAPAS_FILTROS[modoAtual] || {});
-            const chaveReal = chavesMapa.find(k => normalizar(k) === filtroChip) || filtroChip;
-            const keywords = MAPAS_FILTROS[modoAtual][chaveReal] || [];
-            if (!keywords.some(k => chip.includes(normalizar(k))) && !chip.includes(filtroChip)) {
+        } else if (visivel && keywordsAtivas) {
+            if (!keywordsAtivas.some(k => chip.includes(k)) && !chip.includes(filtroChip)) {
                 visivel = false;
             }
         }

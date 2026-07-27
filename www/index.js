@@ -1,5 +1,5 @@
 import { db, GetRegrasLojista, APP_URL } from './config.js';
-import { collection, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, getDocs, addDoc, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // Reaplica a credencial após terminate() ter sido chamado antes de uma navegação
 // anterior — terminate() invalida o objeto db para qualquer chamada futura
@@ -281,12 +281,41 @@ async function inicializarInterno(sequenceId) {
         if (currentInitSequence !== sequenceId) return;
         setEstadoInit(ESTADOS_INIT.CARREGANDO_FIREBASE);
 
-        const cachedProdutos = sessionStorage.getItem('todosProdutosCache');
-        if (cachedProdutos && !todosProdutos.length) {
+        const PEDEAI_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos — ajuste aqui se quiser outro tempo
+        const PEDEAI_CACHE_KEY = 'pedeai_produtos_cache_persistente';
+
+        const lerCachePersistente = () => {
           try {
-            todosProdutos = JSON.parse(cachedProdutos);
-            console.log('Produtos restaurados do cache');
-          } catch(e) { console.warn(e); }
+            const bruto = localStorage.getItem(PEDEAI_CACHE_KEY);
+            if (!bruto) return null;
+            const parsed = JSON.parse(bruto);
+            if (!parsed || !Array.isArray(parsed.dados) || typeof parsed.timestamp !== 'number') return null;
+            const expirado = (Date.now() - parsed.timestamp) > PEDEAI_CACHE_TTL_MS;
+            if (expirado) return null;
+            return parsed.dados;
+          } catch (e) {
+            console.warn('[cache-persistente] falha ao ler, ignorando cache:', e);
+            return null;
+          }
+        };
+
+        const salvarCachePersistente = (dados) => {
+          try {
+            localStorage.setItem(PEDEAI_CACHE_KEY, JSON.stringify({
+              timestamp: Date.now(),
+              dados: dados
+            }));
+          } catch (e) {
+            console.warn('[cache-persistente] falha ao salvar (ex: quota excedida), seguindo sem cache:', e);
+          }
+        };
+
+        if (!todosProdutos.length) {
+          const cachePersistente = lerCachePersistente();
+          if (cachePersistente) {
+            todosProdutos = cachePersistente;
+            console.log('Produtos restaurados do cache persistente (TTL válido)');
+          }
         }
 
         setEstadoInit(ESTADOS_INIT.CARREGANDO_PRODUTOS);
@@ -295,8 +324,8 @@ async function inicializarInterno(sequenceId) {
           const timeoutFirestore = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error('Firestore timeout ao reabrir o app')), ms));
           const [snapProdutos, snapUsuarios] = await Promise.race([
             Promise.all([
-              getDocs(collection(db, "produtos")),
-              getDocs(collection(db, "usuarios"))
+              getDocs(query(collection(db, "produtos"), where("status", "==", "ativo"))),
+              getDocs(query(collection(db, "usuarios"), where("status", "==", "ativo")))
             ]),
             timeoutFirestore(25000)
           ]);
@@ -328,7 +357,7 @@ async function inicializarInterno(sequenceId) {
               isProdutoAtivo: data.status !== 'inativo' && data.visivel !== false
             });
           });
-          sessionStorage.setItem('todosProdutosCache', JSON.stringify(todosProdutos));
+          salvarCachePersistente(todosProdutos);
         }
 
         if (currentInitSequence !== sequenceId) {

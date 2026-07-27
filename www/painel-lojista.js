@@ -699,6 +699,8 @@ document.getElementById('btn-salvar').onclick = async () => {
             owner: userId, 
             turbo: "nao", 
             promocao: "nao",
+            status: "ativo",
+            visivel: true,
             fotos: urls, 
             foto: urls[0],
             videoUrl: videoUrl || "",

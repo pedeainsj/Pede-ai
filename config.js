@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { initializeFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { initializeFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // SUAS CREDENCIAIS ORIGINAIS (MANTIDAS)
 const firebaseConfig = {
@@ -111,6 +111,34 @@ export const CONFIG_SISTEMA = {
 /**
  * LÓGICA DE VALIDAÇÃO DE PERMISSÕES (HELPERS)
  */
+/**
+ * LIMITES DE VÍDEO POR PLANO — OVERRIDE GLOBAL (Firestore, opcional)
+ * Lido uma única vez na inicialização (1 leitura), não em tempo real,
+ * para não aumentar o consumo de leituras. Se o documento não existir
+ * ou a leitura falhar, os valores padrão de CONFIG_SISTEMA.planos são
+ * mantidos como estão (fallback silencioso).
+ */
+export let limitesPlanosProntos = (async () => {
+    try {
+        const snap = await getDoc(doc(db, "configuracoes", "limitesVideoPlanos"));
+        if (snap.exists()) {
+            const dados = snap.data();
+            if (dados.basico) CONFIG_SISTEMA.planos.basico.limiteVideos = dados.basico;
+            if (dados.premium) CONFIG_SISTEMA.planos.premium.limiteVideos = dados.premium;
+            if (dados.vip) CONFIG_SISTEMA.planos.vip.limiteVideos = dados.vip;
+        }
+    } catch (e) {
+        console.warn("Limites de vídeo personalizados indisponíveis, usando padrão.", e);
+    }
+})();
+
+export const salvarLimitesPlanos = async ({ basico, premium, vip }) => {
+    await setDoc(doc(db, "configuracoes", "limitesVideoPlanos"), { basico, premium, vip }, { merge: true });
+    CONFIG_SISTEMA.planos.basico.limiteVideos = basico;
+    CONFIG_SISTEMA.planos.premium.limiteVideos = premium;
+    CONFIG_SISTEMA.planos.vip.limiteVideos = vip;
+};
+
 export const GetRegrasLojista = (dadosLojista) => {
     const planoChave = dadosLojista?.planoAtivo || "basico";
     

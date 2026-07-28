@@ -699,6 +699,8 @@ document.getElementById('btn-salvar').onclick = async () => {
             owner: userId, 
             turbo: "nao", 
             promocao: "nao",
+            status: "ativo",
+            visivel: true,
             fotos: urls, 
             foto: urls[0],
             videoUrl: videoUrl || "",
@@ -722,6 +724,14 @@ document.getElementById('btn-salvar').onclick = async () => {
             whatsapp: userData.whatsapp || "",
             createdAt: serverTimestamp()
         });
+
+        // Invalida o cache persistente do index para que o produto recém-publicado
+        // apareça imediatamente na vitrine, sem esperar o TTL de 5 minutos expirar.
+        try {
+            localStorage.removeItem('pedeai_produtos_cache_persistente');
+        } catch (e) {
+            console.warn('Não foi possível invalidar o cache persistente do index:', e);
+        }
 
         // Feedback elegante
         if (window.mostrarSucessoPublicacao) window.mostrarSucessoPublicacao();

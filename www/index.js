@@ -135,33 +135,36 @@ function normalizar(texto) {
     return texto ? texto.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "") : "";
 }
 
-const ordemFixaCache = {};
-
 function aplicarAlgoritmoVisibilidade(lista) {
     const pesos = { 'vip': 5, 'premium': 3, 'basico': 1 };
-    const obterSeed = (id) => {
-        if (ordemFixaCache[id] === undefined) {
-            ordemFixaCache[id] = Math.random() - 0.5;
-        }
-        return ordemFixaCache[id];
-    };
+    const obterPlano = (p) => (p.planoLojista === 'vip' || p.planoLojista === 'premium') ? p.planoLojista : 'basico';
 
-    const grupos = {
-        vip: lista.filter(p => p.planoLojista === 'vip').sort((a, b) => obterSeed(a.id) - obterSeed(b.id)),
-        premium: lista.filter(p => p.planoLojista === 'premium').sort((a, b) => obterSeed(a.id) - obterSeed(b.id)),
-        basico: lista.filter(p => (p.planoLojista === 'basico' || !p.planoLojista)).sort((a, b) => obterSeed(a.id) - obterSeed(b.id))
-    };
-
+    const restantes = lista.map(p => ({ item: p, peso: pesos[obterPlano(p)] }));
     const resultado = [];
-    const totalVip = grupos.vip.length;
-    const totalPremium = grupos.premium.length;
-    const totalBasico = grupos.basico.length;
-    let iV = 0, iP = 0, iB = 0;
+    let ultimoLojistaId = null;
 
-    while (iV < totalVip || iP < totalPremium || iB < totalBasico) {
-        for (let j = 0; j < pesos.vip && iV < totalVip; j++) resultado.push(grupos.vip[iV++]);
-        for (let j = 0; j < pesos.premium && iP < totalPremium; j++) resultado.push(grupos.premium[iP++]);
-        for (let j = 0; j < pesos.basico && iB < totalBasico; j++) resultado.push(grupos.basico[iB++]);
+    while (restantes.length > 0) {
+        let somaPesos = 0;
+        for (let i = 0; i < restantes.length; i++) {
+            const penalidade = (restantes[i].item.lojistaId !== undefined && restantes[i].item.lojistaId === ultimoLojistaId) ? 0.15 : 1;
+            somaPesos += restantes[i].peso * penalidade;
+        }
+
+        let sorteio = Math.random() * somaPesos;
+        let indiceEscolhido = restantes.length - 1;
+        for (let i = 0; i < restantes.length; i++) {
+            const penalidade = (restantes[i].item.lojistaId !== undefined && restantes[i].item.lojistaId === ultimoLojistaId) ? 0.15 : 1;
+            sorteio -= restantes[i].peso * penalidade;
+            if (sorteio <= 0) {
+                indiceEscolhido = i;
+                break;
+            }
+        }
+
+        const escolhido = restantes[indiceEscolhido].item;
+        resultado.push(escolhido);
+        ultimoLojistaId = escolhido.lojistaId !== undefined ? escolhido.lojistaId : ultimoLojistaId;
+        restantes.splice(indiceEscolhido, 1);
     }
     return resultado;
 }

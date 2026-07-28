@@ -152,16 +152,49 @@ function aplicarAlgoritmoVisibilidade(lista) {
         basico: lista.filter(p => (p.planoLojista === 'basico' || !p.planoLojista)).sort((a, b) => obterSeed(a.id) - obterSeed(b.id))
     };
 
-    const resultado = [];
-    const totalVip = grupos.vip.length;
-    const totalPremium = grupos.premium.length;
-    const totalBasico = grupos.basico.length;
-    let iV = 0, iP = 0, iB = 0;
+    const ponteiros = { vip: 0, premium: 0, basico: 0 };
+    const usados = { vip: 0, premium: 0, basico: 0 };
+    const totais = { vip: grupos.vip.length, premium: grupos.premium.length, basico: grupos.basico.length };
 
-    while (iV < totalVip || iP < totalPremium || iB < totalBasico) {
-        for (let j = 0; j < pesos.vip && iV < totalVip; j++) resultado.push(grupos.vip[iV++]);
-        for (let j = 0; j < pesos.premium && iP < totalPremium; j++) resultado.push(grupos.premium[iP++]);
-        for (let j = 0; j < pesos.basico && iB < totalBasico; j++) resultado.push(grupos.basico[iB++]);
+    const restam = (chave) => ponteiros[chave] < totais[chave];
+
+    const escolherItem = (chave, ultimoLojistaId) => {
+        const grupo = grupos[chave];
+        const idx = ponteiros[chave];
+        const candidato = grupo[idx];
+        if (candidato.lojistaId === undefined || candidato.lojistaId !== ultimoLojistaId) {
+            ponteiros[chave]++;
+            return candidato;
+        }
+        for (let k = idx + 1; k < grupo.length; k++) {
+            if (grupo[k].lojistaId !== ultimoLojistaId) {
+                [grupo[idx], grupo[k]] = [grupo[k], grupo[idx]];
+                ponteiros[chave]++;
+                return grupo[idx];
+            }
+        }
+        ponteiros[chave]++;
+        return candidato;
+    };
+
+    const resultado = [];
+    let ultimoLojistaId = null;
+
+    while (restam('vip') || restam('premium') || restam('basico')) {
+        let escolhida = null;
+        let menorRazao = Infinity;
+        for (const chave of ['vip', 'premium', 'basico']) {
+            if (!restam(chave)) continue;
+            const razao = usados[chave] / pesos[chave];
+            if (razao < menorRazao) {
+                menorRazao = razao;
+                escolhida = chave;
+            }
+        }
+        const item = escolherItem(escolhida, ultimoLojistaId);
+        usados[escolhida]++;
+        resultado.push(item);
+        ultimoLojistaId = item.lojistaId !== undefined ? item.lojistaId : ultimoLojistaId;
     }
     return resultado;
 }

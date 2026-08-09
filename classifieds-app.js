@@ -147,14 +147,10 @@ async function carregarAnunciosInicial() {
             return;
         }
 
-        const agora = Date.now();
         const anuncios = [];
         querySnapshot.forEach(docSnap => {
             const dados = docSnap.data();
-            const expirado = dados.dataExpiracao && agora > dados.dataExpiracao;
-            if (!expirado) {
-                anuncios.push({ id: docSnap.id, ...dados });
-            }
+            anuncios.push({ id: docSnap.id, ...dados });
         });
 
         anuncios.sort((a, b) => (b.dataCriacao || 0) - (a.dataCriacao || 0));

@@ -454,19 +454,18 @@
             );
         }
 
-        // Corte inteligente (mesmo critério da vitrine.js): vertical → contain + leve zoom; horizontal → cover; quadrada → contain + leve zoom
+        // Corte inteligente (mesmo critério da vitrine.js): vertical → contain; horizontal → cover; quadrada → contain
+        // Sem transform/scale — o scale() anterior usava fatores diferentes em X e Y,
+        // o que estica a imagem de forma desproporcional (achatamento/distorção).
         function ajustarFit(img) {
             const w = img.naturalWidth;
             const h = img.naturalHeight;
             if (h > w) {
                 img.style.objectFit = 'contain';
-                img.style.transform = 'scale(1.15) scaleX(1.12)';
             } else if (w > h) {
                 img.style.objectFit = 'cover';
-                img.style.transform = 'scale(1.02) scaleX(1.01)';
             } else {
                 img.style.objectFit = 'contain';
-                img.style.transform = 'scale(1.08) scaleX(1.02)';
             }
         }
 
